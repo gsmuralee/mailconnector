@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "cors": "^2.8.4",
+    "node-fetch": "^2.2.0",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
     "react-scripts": "1.1.4"

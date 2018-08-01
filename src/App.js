@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 
-import logo from './logo.svg';
 
 import './App.css';
 
@@ -11,15 +10,17 @@ class App extends Component {
 
   componentDidMount() {
     this.callApi()
-      .then(res => this.setState({ response: res.express }))
+      .then(res => {
+          return this.setState({ response: res})
+      })
       .catch(err => console.log(err));
   }
 
   callApi = async () => {
-    const response = await fetch('/mailconnector/login');
+    const response = await fetch('/api/login');
     const body = await response.json();
 
-    if (response.status !== 200) throw Error(body.message);
+    if (body.status !== 200) throw Error(body.message);
 
     return body;
   };
@@ -27,7 +28,7 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        <p className="App-intro">{this.state.response}</p>
+        <p className="App-intro">{this.state.response.token}</p>
       </div>
     );
   }
