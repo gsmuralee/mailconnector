@@ -1,11 +1,10 @@
 const fetch = require("node-fetch");
 
 exports.login = (request, response) => {
-    const body = {
-        "username": "muraligs",
-        "password": "May-018",
-        "authtype": "secLDAP"
-    }
+    console.log(request.body)
+    const {username, password, authtype} = request.body
+    const body = {username, password, authtype:"secLDAP"}
+
     return fetch("http://labs.visualbi.com:2438/v1/login",
     { method: 'POST', body: JSON.stringify(body), headers: {'Content-Type':'application/json'} })
     .then(res => res.json())

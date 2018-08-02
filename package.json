@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "body-parser": "^1.18.3",
     "cors": "^2.8.4",
     "node-fetch": "^2.2.0",
     "react": "^16.4.1",
