@@ -10,7 +10,6 @@ class Login extends Component {
     }
 
     callApi = async (username, password) => {
-        console.log({username, password})
         const response = await fetch('/api/login', { method: 'POST', body: JSON.stringify({username, password}), headers: {'Content-Type':'application/json'} });
         const body = await response.json();
     
