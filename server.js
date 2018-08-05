@@ -12,5 +12,6 @@ app.options('*', cors());
 
 //routes
 app.post('/api/login', api.login);
+app.get('/api/results/:username', api.results);
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

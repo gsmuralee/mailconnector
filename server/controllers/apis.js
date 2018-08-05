@@ -14,3 +14,15 @@ exports.login = (request, response) => {
     });
 }
 
+exports.results = (request, response) => {
+    const {username} = request.params
+
+    return fetch(`http://labs.visualbi.com:2438/luna/reports/${username}&false`,
+    { method: 'GET',  headers: {'Content-Type':'application/json'} })
+    .then(res => res.json())
+    .then(json => {
+        console.log(json)
+        return response.send(json)
+    });
+}
+

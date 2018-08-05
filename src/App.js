@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { Route,Redirect } from 'react-router-dom';
 import Login from './components/login';
+import Home from './components/home';
+import Auth from './helpers/auth';
 import './App.css';
 
 class App extends Component {
@@ -12,14 +14,14 @@ class App extends Component {
   render() {
     const PrivateRoute = ({component: Component, ...rest}) => (
       <Route {...rest} render={(props) => (
-          false === true
+          (Auth.isLoggedIn() === true)
           ? <Component {...props} />
           : <Redirect to='/login' />
       )}/>
     )
     const PublicRoute =  ({ component: Component, ...rest }) => (
       <Route {...rest} render={(props) => (
-        false === true
+        (Auth.isLoggedIn() === true)
           ?  <Redirect to='/' />
           : <Component {...props} />
       )} />
@@ -27,7 +29,7 @@ class App extends Component {
     return(
       <div className="height-100">
         <PublicRoute exact path="/login" component={Login} />
-        <PrivateRoute exact path="/login" component={Home} />
+        <PrivateRoute exact path="/" component={Home} />
       </div>
     );
   }
