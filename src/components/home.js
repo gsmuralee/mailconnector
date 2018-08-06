@@ -11,9 +11,16 @@ class Home extends Component {
             columnDefs: [
                 {headerName: "Title", field: "title"},
                 {headerName: "CUID", field: "cUID"},
-                {headerName: "FoldeNname", field: "foldername"}
+                {headerName: "FoldeNname", field: "foldername"},
+                {headerName: "alias", field: "alias", editable: true}
             ]
         }
+        this.onCellValueChanged = this.onCellValueChanged.bind(this);
+    }
+    onCellValueChanged(params) {
+        const changedData = [params.data];
+        console.log(changedData)
+        //params.api.updateRowData({update: changedData});
     }
 
     callApi = async (username) => {
@@ -21,7 +28,7 @@ class Home extends Component {
         const reports = await response.json()
         let result  = reports.map(res => {
             let {title, cUID, foldername} = res;
-            return {title, cUID, foldername}
+            return {title, cUID, foldername, alias: ""}
         })
         return result;
     };
@@ -38,12 +45,14 @@ class Home extends Component {
                 <div 
                   className="ag-theme-balham"
                   style={{ 
-	                height: '500px', 
-	                width: '600px' }} 
+	                height: '800px', 
+	                width: '800px' }} 
 		            >
                     <AgGridReact
                         columnDefs={this.state.columnDefs}
-                        rowData={this.state.rowData}>
+                        rowData={this.state.rowData}
+                        onCellValueChanged={this.onCellValueChanged}
+                        >
                     </AgGridReact>
                 </div>
             </div>

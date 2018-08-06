@@ -1,7 +1,7 @@
-var MailListener = require("mail-listener2");
+const MailListener = require("mail-listener2");
 const childProcess = require('child_process');
 
-var mailListener = new MailListener({
+const mailListener = new MailListener({
     username:	"muraligs@visualbi.com", 
     password:"Dec-2017", 
     host: 'outlook.office365.com',

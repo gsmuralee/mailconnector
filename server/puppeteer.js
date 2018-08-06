@@ -1,39 +1,4 @@
-/**
- * Copyright 2018 Google Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * @author ebidel@ (Eric Bidelman)
- */
 
-/**
- * Takes a screenshot of the latest tweet in a user's timeline and creates a
- * PDF of it. Shows how to use Puppeteer to:
- *
- *   1. screenshot a DOM element
- *   2. craft an HTML page on-th-fly.
- *   3. produce an image of the element and PDF of the page with the image embedded.
- *
- * Usage:
- *   node element-to-pdf.js
- *   USERNAME=ChromiumDev node element-to-pdf.js
- *
- *   --searchable makes "find in page" work:
- *   node element-to-pdf.js --searchable
- *
- * Output:
- *   tweet.png and tweet.pdf
- */
 const puppeteer = require('puppeteer');
 
 const username = process.env.USERNAME || 'ebidel';
@@ -45,17 +10,11 @@ const browser = await puppeteer.launch();
 
 const page = await browser.newPage();
 await page.setViewport({width: 1200, height: 800, deviceScaleFactor: 2});
-await page.goto(`https://twitter.com/${username}`);
+await page.goto(`http://labs.visualbi.com:8082/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AUK5iCgupTxIhD.SPax31Fg&sIDType=CUID&token=VM-BILS20.VISUALBI.COM%3A6400%40%7B3%262%3D265786%2CU3%262v%3DVM-BILS20.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6512%2CU3%26qe%3D100%2CU3%26vz%3Dah1PcWBsQgMgDyLNYMy8y.DYNlAq9dVM0Sn_Mzaf2Zc%2CUP%7D`);
 
-// Can't use elementHandle.click() because it clicks the center of the element
-// with the mouse. On tweets like https://twitter.com/ebidel/status/915996563234631680
-// there is an embedded card link to another tweet that it clicks.
-//await page.$eval(`.tweet[data-screen-name="${username}"]`, tweet => tweet.click());
-//await page.waitForSelector('.tweet.permalink-tweet', {visible: true});
+//wait 2 minutes, before genearting pdf
 
-//const overlay = await page.$('.tweet.permalink-tweet');
-//const screenshot = await page.screenshot({path: 'tweet.png'});
-
+await page.waitFor(1000*60*2);
 
 await page.pdf({path: 'tweet.pdf', format: 'A4'});
 
