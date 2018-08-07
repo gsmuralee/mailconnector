@@ -20,7 +20,15 @@ class Home extends Component {
     onCellValueChanged(params) {
         const changedData = [params.data];
         console.log(changedData)
-        //params.api.updateRowData({update: changedData});
+        this.updateDB(changedData).then(rowData => rowData)
+        .catch(err => console.log(err));
+    }
+
+    updateDB = async (data) => {
+        const {cUID, alias} = data; 
+        const response = await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
+        ,headers: {'Content-Type':'application/json'} });
+        const reports = await response.json()
     }
 
     callApi = async (username) => {

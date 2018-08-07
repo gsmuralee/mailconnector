@@ -13,6 +13,7 @@
     "imap-simple": "^4.1.0",
     "mail-listener2": "^0.3.1",
     "node-fetch": "^2.2.0",
+    "orientjs": "^2.2.10",
     "puppeteer": "^1.6.2",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
