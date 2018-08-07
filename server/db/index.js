@@ -1,10 +1,9 @@
 'use strict'
 
 const OrientDB = require('orientjs');
-const config = require("config");
 let db;
 
-const server = {
+const serverConf = {
     "host": "localhost",
     "port": 2424,
     "username": "root",
@@ -13,15 +12,15 @@ const server = {
       "max": 10
     }
 }
-const credentials = {
-    "name":     "luna_local",
+const config = {
+    "name":     "luna_latest",
     "user":     "admin",
     "password": "admin"
   }
 exports.connect = function(){
   if(!db){
-      const server = OrientDB(config.get('db.server'));
-      db = server.use(config.get('db.database'));
+      const server = OrientDB(serverConf);
+      db = server.use(config);
       return db;
   } else {
       return db;

@@ -18,21 +18,20 @@ class Home extends Component {
         this.onCellValueChanged = this.onCellValueChanged.bind(this);
     }
     onCellValueChanged(params) {
-        const changedData = [params.data];
-        console.log(changedData)
-        this.updateDB(changedData).then(rowData => rowData)
-        .catch(err => console.log(err));
+        const {cUID, alias} = params.data;
+        if(alias.length > 3){
+            this.updateDB(cUID, alias).then(rowData => rowData)
+            .catch(err => console.log(err));
+        }
     }
 
-    updateDB = async (data) => {
-        const {cUID, alias} = data; 
-        const response = await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
-        ,headers: {'Content-Type':'application/json'} });
-        const reports = await response.json()
+    updateDB = async (cUID, alias) => {
+        return await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
+            ,headers: {'Content-Type':'application/json'} });
     }
 
     callApi = async (username) => {
-        const response = await fetch(`/api/results/${username}`, { method: 'GET', headers: {'Content-Type':'application/json'} });
+        const response = await fetch(`/api/reports/${username}`, { method: 'GET', headers: {'Content-Type':'application/json'} });
         const reports = await response.json()
         let result  = reports.map(res => {
             let {title, cUID, foldername} = res;
