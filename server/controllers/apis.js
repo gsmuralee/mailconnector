@@ -1,12 +1,19 @@
 const fetch = require("node-fetch");
 const db = require("../db").connect();
 
-const mergeRecords = async function(username, reports){
-    const records = await db.query(`select cuid, alias from Alias where username in (${username})`).all();
+const getRecords = async function(username){
+    return await db.query(`select cuid, alias from Alias where username = '${username}'`).all();
 }
 
+const mergeRecords = function(reports, records){
+    return reports.map(p => {
+        let [v] = records.filter(r => r.cuid == p.cUID);
+        return v ? (p.alias = v.alias, p) : (p.alias='', p)
+    })
+}
+
+
 exports.login = (request, response) => {
-    console.log(request.body)
     const {username, password, authtype} = request.body
     const body = {username, password, authtype:"secLDAP"}
 
@@ -19,16 +26,13 @@ exports.login = (request, response) => {
     });
 }
 
-exports.reports = (request, response) => {
+exports.reports = async (request, response) => {
     const {username} = request.params
-
-    return fetch(`http://labs.visualbi.com:2439/luna/reports/${username}&true`,
-    { method: 'GET',  headers: {'Content-Type':'application/json'} })
-    .then(res => res.json())
-    .then(json => {
-
-        return response.send(json)
-    });
+    const res = await fetch(`http://labs.visualbi.com:2439/luna/reports/${username}&true`,
+            { method: 'GET',  headers: {'Content-Type':'application/json'} })
+    const objs = await res.json()
+    const records = await getRecords(username);
+    return response.send(mergeRecords(objs, records))
 }
 
 exports.alias = (request, response) => {
