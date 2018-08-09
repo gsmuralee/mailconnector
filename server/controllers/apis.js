@@ -41,3 +41,9 @@ exports.alias = (request, response) => {
     .then(res =>  res ).catch(err => err)
 }
 
+exports.schedule = (request, response) => {
+    const {type, startDate, endDate, executeOn} = request.body;
+    return db.query(`update MailSchedule set type='${type}',startDate='${startDate}',endDate='${endDate}', executeOn='${executeOn}' upsert where cuid='${cUID}'`)
+    .then(res =>  res ).catch(err => err)
+}
+

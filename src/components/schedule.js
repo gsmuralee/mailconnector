@@ -1,14 +1,11 @@
-import React, {Component} from 'react';
-class Schedule extends Component {
-  constructor(props){
-      super(props);  
-  }
-
-  render(){
+import React from 'react';
+const Schedule = ({isActive, onDismiss, onCreate}) => {
+    let className = isActive ? 'overlay-head': 'overlay-hide';
+    
     return(
-      <div className='overlay-head'>
+      <div className={className}>
         <div className='overlay-sidebar'>
-          <div className='overlay-rest'></div>
+          <div className='overlay-rest' onClick={onDismiss}></div>
             <div className='overlay-layer-container'>
               <div className='col-sm-12 col-md-12'>
                 <h4 className='heading-form font-weight-600'>View Schedule</h4>
@@ -30,8 +27,6 @@ class Schedule extends Component {
         
       </div>
     )
-  }
-
 }
 
 export default Schedule

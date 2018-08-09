@@ -18,10 +18,11 @@ class Home extends Component {
                 {headerName: "FolderName", field: "foldername"},
                 {headerName: "Alias", field: "alias", editable: true},
                 {headerName: "Schedule", field: "schedule", cellRenderer: this.cellRendererFunc}
-            ]
+            ],
+            viewSidebarActive: true
         }
         this._handleClick = this._handleClick.bind(this);
-        
+        this.hideSideBar = this.hideSideBar.bind(this);
     }
     onCellValueChanged(params) {
         const {cUID, alias} = params.data;
@@ -63,6 +64,10 @@ class Home extends Component {
         return result;
     };
 
+    hideSideBar(){
+        this.setState({viewSidebarActive: false})
+    }
+
     componentDidMount() {
         this.callApi('arunpalani')
             .then(rowData => this.setState({rowData}))
@@ -86,7 +91,7 @@ class Home extends Component {
                         >
                     </AgGridReact>
                 </div>
-                <Schedule />
+                <Schedule isActive={this.state.viewSidebarActive} onDismiss={this.hideSideBar}/>
             </div>
         )
     }
