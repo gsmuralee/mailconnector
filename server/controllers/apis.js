@@ -41,9 +41,24 @@ exports.alias = (request, response) => {
     .then(res =>  res ).catch(err => err)
 }
 
-exports.schedule = (request, response) => {
+exports.createSchedule = async (request, response) => {
+    try{
+        const {type, startDate, endDate, executeOn, scheduleId} = request.body;
+        const schedule = await db.query(`update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn upsert where @rid= ${scheduleId}`,
+        {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}}).one()
+        if(scheduleId != schedule['@rid']){
+            await db.create('EDGE', 'mailScheduleHasAlias').from(schedule['@rid']).to(alias.id).one();
+        }
+        return response.send(schedule)
+    } catch(e){
+        const error = new Error(e)
+        return response.send(error)
+    }
+}
+
+exports.deleteSchedule = (request, response) => {
     const {type, startDate, endDate, executeOn} = request.body;
-    return db.query(`update MailSchedule set type='${type}',startDate='${startDate}',endDate='${endDate}', executeOn='${executeOn}' upsert where cuid='${cUID}'`)
-    .then(res =>  res ).catch(err => err)
+    return db.query('update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn',
+    {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}}).one().then(res =>  res ).catch(err => err)
 }
 
