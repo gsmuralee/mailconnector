@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import Auth from '../helpers/auth';
 import Schedule from './schedule';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid/dist/styles/ag-grid.css';
@@ -19,7 +18,8 @@ class Home extends Component {
                 {headerName: "Alias", field: "alias", editable: true},
                 {headerName: "Schedule", field: "schedule", cellRenderer: this.cellRendererFunc}
             ],
-            viewSidebarActive: true
+            viewSidebarActive: true,
+            currentCUID: ''
         }
         this._handleClick = this._handleClick.bind(this);
         this.hideSideBar = this.hideSideBar.bind(this);
@@ -27,8 +27,10 @@ class Home extends Component {
     onCellValueChanged(params) {
         const {cUID, alias} = params.data;
         if(alias.length > 3){
-            this.updateDB(cUID, alias).then(rowData => rowData)
-            .catch(err => console.log(err));
+            this.updateDB(cUID, alias).then(rowData => {
+
+                rowData
+            }).catch(err => console.log(err));
         }
     }
    
@@ -39,37 +41,39 @@ class Home extends Component {
         link.innerText = 'schedule';
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            this._handleClick()
+            this._handleClick(params.data.cUID)
         });
         return link;
     }
 
-    _handleClick(){
-        console.log("some API call and state change");
+    _handleClick(cuid){
+        this.setState({viewSidebarActive: true, currentCUID: cuid})
     }
 
 
     updateDB = async (cUID, alias) => {
-        return await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
+        const res = await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
             ,headers: {'Content-Type':'application/json'} });
+        const record = await res.json();
+        return record
     }
 
     callApi = async (username) => {
         const response = await fetch(`/api/reports/${username}`, { method: 'GET', headers: {'Content-Type':'application/json'} });
         const reports = await response.json()
         let result  = reports.map(res => {
-            let {title, cUID, foldername, alias} = res;
+            const {title, cUID, foldername, alias} = res;
             return {title, cUID, foldername, alias}
         })
         return result;
     };
 
     hideSideBar(){
-        this.setState({viewSidebarActive: false})
+        this.setState({viewSidebarActive: false })
     }
 
     componentDidMount() {
-        this.callApi('arunpalani')
+        this.callApi('muraligs')
             .then(rowData => this.setState({rowData}))
             .catch(err => console.log(err));
     }

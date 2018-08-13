@@ -35,20 +35,25 @@ exports.reports = async (request, response) => {
     return response.send(mergeRecords(objs, records))
 }
 
-exports.alias = (request, response) => {
-    const {username, cUID, alias} = request.body
-    return db.query(`update Alias set username='${username}',cuid='${cUID}',alias='${alias}' upsert where cuid='${cUID}'`)
-    .then(res =>  res ).catch(err => err)
+exports.alias = async (request, response) => {
+    try{
+        const {username, cUID, alias} = request.body
+        await db.query(`update Alias set username='${username}',cuid='${cUID}',alias='${alias}' upsert where cuid='${cUID}'`)
+        const [record] = await db.query(`select @rid from Alias where cuid='${cUID}'`);
+        if(!record) throw new Error('Error inserting record')
+        return response.send(record);
+    } catch(e){
+        return response.send(e);
+    }
 }
 
 exports.createSchedule = async (request, response) => {
     try{
-        const {type, startDate, endDate, executeOn, scheduleId} = request.body;
-        const schedule = await db.query(`update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn upsert where @rid= ${scheduleId}`,
-        {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}}).one()
-        if(scheduleId != schedule['@rid']){
-            await db.create('EDGE', 'mailScheduleHasAlias').from(schedule['@rid']).to(alias.id).one();
-        }
+        const {type, startDate, endDate, executeOn, cUID} = request.body;
+        const [alias] = await db.query(`select @rid from Alias where cuid='${cUID}'`);
+        const schedule = await db.query(`create Vertex MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn`,
+        {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}});
+        await db.create('EDGE', 'mailScheduleHasAlias').from(alias['rid']).to(schedule['rid']).one();
         return response.send(schedule)
     } catch(e){
         const error = new Error(e)
@@ -56,9 +61,34 @@ exports.createSchedule = async (request, response) => {
     }
 }
 
-exports.deleteSchedule = (request, response) => {
-    const {type, startDate, endDate, executeOn} = request.body;
-    return db.query('update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn',
-    {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}}).one().then(res =>  res ).catch(err => err)
+exports.updateSchedule = async (request, response) => {
+    try{
+        const {type, startDate, endDate, executeOn} = request.body;
+        const schedule = await db.query(`update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn where @rid= ${scheduleId}`,
+        {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}});
+        return response.send(schedule)
+    } catch(e){
+        const error = new Error(e)
+        return response.send(error)
+    }
 }
+
+exports.deleteSchedule= async function(request, response){
+    const scheduleId = '#'+request.params.scheduleId;
+    await db.query("delete edge mailScheduleHasAlias where out="+scheduleId);
+    await db.query("delete Vertex MailSchedule where @rid="+scheduleId);
+    return response.send({message: 'success'})
+};
+
+exports.getSchedule= async function(request, response){
+    try{
+        const scheduleId = "#"+request.params.scheduleId;
+        const [schedule] = await db.query(`select @rid as scheduleId,type,startDate,endDate,executeOn from MailSchedule @rid=${scheduleId}`);
+        if(schedule){
+            return response.send(schedule)
+        } else throw new Error("no Schedule found")
+    } catch(e){
+        return response.send(e)
+    }
+};
 

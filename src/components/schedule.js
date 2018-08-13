@@ -1,4 +1,5 @@
 import React from 'react';
+
 const Schedule = ({isActive, onDismiss, onCreate}) => {
     let className = isActive ? 'overlay-head': 'overlay-hide';
     
@@ -24,7 +25,6 @@ const Schedule = ({isActive, onDismiss, onCreate}) => {
               </div>
             </div>
         </div>
-        
       </div>
     )
 }
