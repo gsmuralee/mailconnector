@@ -29,7 +29,7 @@ exports.login = (request, response) => {
 
 exports.reports = async (request, response) => {
     const {username} = request.params
-    const res = await fetch(`http://labs.visualbi.com:2439/luna/reports/${username}&true`,
+    const res = await fetch(`http://labs.visualbi.com:2439/luna/reports/${username}&false`,
             { method: 'GET',  headers: {'Content-Type':'application/json'} })
     const objs = await res.json()
     const records = await getRecords(username);

@@ -1,9 +1,12 @@
 const MailListener = require("mail-listener2");
-const childProcess = require('child_process');
+const db = require("./db").connect();
+const fetch = require('node-fetch');
+const {generatePdf} = require("./puppeteer");
+const {sendMail} = require("./mailer");
 
 const mailListener = new MailListener({
     username:	"muraligs@visualbi.com", 
-    password:"Dec-2017", 
+    password:"Jul-2018", 
     host: 'outlook.office365.com',
     port: 993, // imap port
     tls: true,
@@ -36,9 +39,24 @@ mailListener.on("error", function(err){
 mailListener.on("mail", function(mail, seqno, attributes){
   // do something with mail object including attachments
   const [text, value] = mail.subject.split(" ")
-  console.log(text)
+  console.log(mail, value)
   if(text === "alias"){
-    childProcess.execSync("node server/sendMail.js tweet.pdf");
+    const [from] = mail.from
+    generateAndSendMail(value, from.address)
   }
   // mail processing code goes here
 });
+
+
+const generateAndSendMail = async (val, email) => {
+  const [aliasRec] = await db.query(`select * from Alias where alias = '${val}'`).all();
+  console.log(aliasRec)
+  const {username, cuid, alias} = aliasRec;
+  const res = await fetch(`http://labs.visualbi.com:2439/luna/reports/embed/${cuid}/${username}`,
+          { method: 'GET',  headers: {'Content-Type':'application/json'} })
+  const {url} = await res.json();
+  const tempURL = 'http://labs.visualbi.com:8084/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AUTsgHGpANhKkQ__5grPNmU&sIDType=CUID&token=VM-BILS21.VISUALBI.COM%3A6400%40%7B3%262%3D426577%2CU3%262v%3DVM-BILS21.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6873%2CU3%26qe%3D100%2CU3%26vz%3Dt36D7fZSoaWaTFih2ZFbx6f1.gRmzB8TzPtep_h6jvd.D4icVgLUUN5PlO_ICKc9%2CUP%7D'
+  const pdf = await generatePdf(tempURL, cuid);
+  sendMail(alias, cuid, email)
+  return aliasRec;
+}
