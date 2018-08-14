@@ -14,4 +14,6 @@ app.options('*', cors());
 app.post('/api/login', api.login);
 app.get('/api/reports/:username', api.reports);
 app.post('/api/reports/alias', api.alias);
+app.post('/api/reports/schedule', api.createSchedule);
+app.get('/api/alias/:cuid/schedule', api.getSchedule);
 app.listen(port, () => console.log(`Listening on port ${port}`));

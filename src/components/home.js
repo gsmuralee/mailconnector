@@ -1,5 +1,7 @@
 import React, {Component} from 'react';
-import Schedule from './schedule';
+import Auth from '../helpers/auth';
+import Navigation from './navigation';
+import CreateSchedule from './schedule/CreateSchedule';
 import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid/dist/styles/ag-grid.css';
 import 'ag-grid/dist/styles/ag-theme-balham.css';
@@ -18,22 +20,26 @@ class Home extends Component {
                 {headerName: "Alias", field: "alias", editable: true},
                 {headerName: "Schedule", field: "schedule", cellRenderer: this.cellRendererFunc}
             ],
-            viewSidebarActive: true,
-            currentCUID: ''
+            viewSidebarActive: false,
+            currentCUID: '',
+            data: {}
         }
-        this._handleClick = this._handleClick.bind(this);
+        this.handleClick = this.handleClick.bind(this);
         this.hideSideBar = this.hideSideBar.bind(this);
     }
     onCellValueChanged(params) {
         const {cUID, alias} = params.data;
         if(alias.length > 3){
-            this.updateDB(cUID, alias).then(rowData => {
-
-                rowData
-            }).catch(err => console.log(err));
+            this.updateDB(cUID, alias).then(rowData => rowData)
+            .catch(err => console.log(err));
         }
     }
-   
+    onCreate = async(data) => {
+        await fetch(`/api/reports/schedule`, { method: 'POST', body: JSON.stringify(data)
+            ,headers: {'Content-Type':'application/json'} });
+            this.hideSideBar();
+            return;
+    }
     //need to add react onclick listener
     cellRendererFunc(params) {
         const link = document.createElement('a');
@@ -41,18 +47,22 @@ class Home extends Component {
         link.innerText = 'schedule';
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            this._handleClick(params.data.cUID)
+            this.handleClick(params.data.cUID)
         });
         return link;
     }
 
-    _handleClick(cuid){
-        this.setState({viewSidebarActive: true, currentCUID: cuid})
+    handleClick = async (cuid) => {
+        // const response = await fetch(`/api/alias/${cuid}/schedule`, { method: 'GET', headers: {'Content-Type':'application/json'} });
+        // const schedule = await response.json()
+        // console.log(schedule)
+    const schedule = {email: 'muraligs@visualbi.com'}
+        this.setState({viewSidebarActive: true, currentCUID: cuid, data: schedule })
     }
 
 
     updateDB = async (cUID, alias) => {
-        const res = await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
+        const res =  await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
             ,headers: {'Content-Type':'application/json'} });
         const record = await res.json();
         return record
@@ -62,25 +72,27 @@ class Home extends Component {
         const response = await fetch(`/api/reports/${username}`, { method: 'GET', headers: {'Content-Type':'application/json'} });
         const reports = await response.json()
         let result  = reports.map(res => {
-            const {title, cUID, foldername, alias} = res;
+            let {title, cUID, foldername, alias} = res;
             return {title, cUID, foldername, alias}
         })
         return result;
     };
 
     hideSideBar(){
-        this.setState({viewSidebarActive: false })
+        this.setState({viewSidebarActive: false})
     }
 
     componentDidMount() {
-        this.callApi('muraligs')
+        this.callApi(localStorage.getItem('_username'))
             .then(rowData => this.setState({rowData}))
             .catch(err => console.log(err));
     }
 
     render(){
+        const {viewSidebarActive, currentCUID, data} = this.state;
         return (
             <div>
+                <Navigation />
                 <div 
                   className="ag-theme-balham"
                   style={{ 
@@ -95,7 +107,7 @@ class Home extends Component {
                         >
                     </AgGridReact>
                 </div>
-                <Schedule isActive={this.state.viewSidebarActive} onDismiss={this.hideSideBar}/>
+                <CreateSchedule isActive={viewSidebarActive} cuid={currentCUID} onCreate={this.onCreate} onDismiss={this.hideSideBar} data={data}/>
             </div>
         )
     }

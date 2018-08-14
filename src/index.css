@@ -2,7 +2,31 @@ body {
   font-family: 'Lato', sans-serif !important;
   background: #e1e2e4 !important;
 }
-
+.fixed-top {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1030;
+}
+.navbar-dark .navbar-nav .nav-link {
+  color: rgba(255,255,255,.5);
+  padding-right: .5rem;
+  padding-left: .5rem;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.navbar-expand-lg .navbar-nav.side-nav{flex-direction: column;}
+.card{margin-bottom: 15px; border-radius:0; box-shadow: 0 3px 5px rgba(0,0,0,.1); }
+.header-top{box-shadow: 0 3px 5px rgba(0,0,0,.1); }
+.bg-dark { background-color: #343a40!important;}
+@media (min-width: 768px) {
+  .ml-md-auto, .mx-md-auto {
+      margin-left: auto!important;
+      float: right !important
+  } 
+}
+.animate{-webkit-transition:all .3s ease-in-out;-moz-transition:all .3s ease-in-out;-o-transition:all .3s ease-in-out;-ms-transition:all .3s ease-in-out;transition:all .3s ease-in-out}
 .sidenav {
   border-radius: 0px !important;
   height: 100%;

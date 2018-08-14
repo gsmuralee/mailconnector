@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer');
 const username = process.env.USERNAME || 'ebidel';
 
 
-(async() => {
+const generatePdf = async(url, cuid) => {
 
 const browser = await puppeteer.launch();
 
@@ -16,8 +16,9 @@ await page.goto(`http://labs.visualbi.com:8082/BOE/OpenDocument/opendoc/openDocu
 
 await page.waitFor(1000*60*2);
 
-await page.pdf({path: 'tweet.pdf', format: 'A4'});
+await page.pdf({path: `documents/${cuid}.pdf`, format: 'A4'});
 
 await browser.close();
 
-})();
+};
+exports.generatePdf = generatePdf;

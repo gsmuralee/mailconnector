@@ -1,5 +1,6 @@
 const fetch = require("node-fetch");
 const db = require("../db").connect();
+const scheduleHelper = require('../schedule')
 
 const getRecords = async function(username){
     return await db.query(`select cuid, alias from Alias where username = '${username}'`).all();
@@ -33,6 +34,7 @@ exports.reports = async (request, response) => {
     const objs = await res.json()
     const records = await getRecords(username);
     return response.send(mergeRecords(objs, records))
+    //return response.send(objs)
 }
 
 exports.alias = async (request, response) => {
@@ -49,11 +51,12 @@ exports.alias = async (request, response) => {
 
 exports.createSchedule = async (request, response) => {
     try{
-        const {type, startDate, endDate, executeOn, cUID} = request.body;
-        const [alias] = await db.query(`select @rid from Alias where cuid='${cUID}'`);
-        const schedule = await db.query(`create Vertex MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn`,
-        {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}});
-        await db.create('EDGE', 'mailScheduleHasAlias').from(alias['rid']).to(schedule['rid']).one();
+        const {type, startDate, endDate, executionTime, cuid, userEmail} = request.body;
+        const [alias] =  await db.query(`select * from Alias where cuid = '${cuid}'`).all()
+        const [schedule] = await db.query(`create Vertex MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executionTime= :executionTime, email= :userEmail`,
+        {params:{ type: type, startDate: startDate, endDate: endDate, executionTime: executionTime, userEmail}})
+        await db.create('EDGE', 'mailScheduleHasAlias').from(alias['@rid']).to(schedule['@rid']).one();
+        scheduleHelper.runSchedules.call(schedule);
         return response.send(schedule)
     } catch(e){
         const error = new Error(e)
@@ -63,9 +66,11 @@ exports.createSchedule = async (request, response) => {
 
 exports.updateSchedule = async (request, response) => {
     try{
-        const {type, startDate, endDate, executeOn} = request.body;
-        const schedule = await db.query(`update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn where @rid= ${scheduleId}`,
+        const {type, startDate, endDate, executionTime, userEmail, scheduleId} = request.body;
+        const resp = await db.query(`update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn where @rid= ${scheduleId}`,
         {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}});
+        const schedule = await db.query(`select * from MailSchedule where rid= ${scheduleId}`)
+        scheduleHelper.runSchedules.call(schedule);
         return response.send(schedule)
     } catch(e){
         const error = new Error(e)
@@ -73,22 +78,16 @@ exports.updateSchedule = async (request, response) => {
     }
 }
 
-exports.deleteSchedule= async function(request, response){
+exports.deleteSchedule = async (request, response) => {
     const scheduleId = '#'+request.params.scheduleId;
     await db.query("delete edge mailScheduleHasAlias where out="+scheduleId);
     await db.query("delete Vertex MailSchedule where @rid="+scheduleId);
     return response.send({message: 'success'})
 };
 
-exports.getSchedule= async function(request, response){
-    try{
-        const scheduleId = "#"+request.params.scheduleId;
-        const [schedule] = await db.query(`select @rid as scheduleId,type,startDate,endDate,executeOn from MailSchedule @rid=${scheduleId}`);
-        if(schedule){
-            return response.send(schedule)
-        } else throw new Error("no Schedule found")
-    } catch(e){
-        return response.send(e)
-    }
-};
+exports.getSchedule = async function(request, response){
+    const {cuid} = request.params;
+    const [schedule] = await db.query(`select expand(out('mailScheduleHasAlias')) from Alias where cuid= '${cuid}'`).all();
+    return response.send(schedule)
+}
 
