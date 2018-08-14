@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import Auth from '../helpers/auth';
 import Navigation from './navigation';
 import CreateSchedule from './schedule/CreateSchedule';
 import { AgGridReact } from 'ag-grid-react';
@@ -53,10 +52,9 @@ class Home extends Component {
     }
 
     handleClick = async (cuid) => {
-        // const response = await fetch(`/api/alias/${cuid}/schedule`, { method: 'GET', headers: {'Content-Type':'application/json'} });
-        // const schedule = await response.json()
-        // console.log(schedule)
-    const schedule = {email: 'muraligs@visualbi.com'}
+        const response = await fetch(`/api/alias/${cuid}/schedule`, { method: 'GET', headers: {'Content-Type':'application/json'} });
+        const schedule = await response.json()
+        // const schedule = {email: 'muraligs@visualbi'}
         this.setState({viewSidebarActive: true, currentCUID: cuid, data: schedule })
     }
 
@@ -92,12 +90,12 @@ class Home extends Component {
         const {viewSidebarActive, currentCUID, data} = this.state;
         return (
             <div>
-                <Navigation />
+                <Navigation history={this.props.history}/>
                 <div 
-                  className="ag-theme-balham"
-                  style={{ 
-	                height: '800px', 
-	                width: '900px' }} 
+                  className="ag-theme-balham grid-pos"
+                  style={{
+	                height: '900px', 
+	                width: '1000px' }} 
 		            >
                     <AgGridReact
                         columnDefs={this.state.columnDefs}

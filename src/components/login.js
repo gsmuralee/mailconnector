@@ -1,10 +1,7 @@
 import React, {Component} from 'react';
-import Auth from '../helpers/auth';
-import {equals, isEmpty} from '../helpers/common'
 class Login extends Component {
     constructor(props){
         super(props);
-        console.log(this.props.history)
         this.state = {
             token: '',
             usernameerr: '',
@@ -27,7 +24,6 @@ class Login extends Component {
         e.preventDefault();
         this.callApi(username.value, password.value)
         .then(res => {
-            console.log(res)
             localStorage.setItem('_token', res.token);
             localStorage.setItem('_username', username.value);
             this.props.history.push("/");

@@ -1341,7 +1341,7 @@ table#content_info_table_lumx  tbody td:nth-child(3) {
   right:0;
   bottom: 0;
   top: 0;
-  padding: 5px 10px;
+  padding: 50px 10px;
   box-shadow: none;
   display: flex;
   flex-direction: column;
@@ -1779,4 +1779,8 @@ div#folderview {
 }
 .ssl{
   display: block;
+}
+
+.grid-pos {
+  padding: 50px 10px;
 }

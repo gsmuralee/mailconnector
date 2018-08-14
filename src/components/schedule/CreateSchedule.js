@@ -156,8 +156,14 @@ const CreateSchedule =  createReactClass({
       this.setState({'scheduleType':eventKey});
       this.setState({'error':''});
   },
-  componentWillReceiveProps() {
-    const {type,data} = this.props;
+
+  getDerivedStateFromProps(n, p){
+    console.log(n, p)
+  },
+
+  componentWillReceiveProps(nextProps) {
+    const {type,data} = nextProps;
+    console.log(this.props, data, nextProps);
     if(!isEmpty(data)) {
       this.setState({'loadingActive':true,'loadingText':'Fetching Schedule','customLoaderClass':'opacity-7','scheduleType':''});
       this.userEmail.value = data.email;

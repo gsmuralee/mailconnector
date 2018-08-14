@@ -12,7 +12,7 @@ class Auth{
 
     static logOut(){
         localStorage.clear();
-        history.push('/');
+        history.push('/login');
         return true;
     }
 
