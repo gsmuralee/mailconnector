@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer');
 const username = process.env.USERNAME || 'ebidel';
 
 
-const generatePdf = async(url, cuid) => {
+const generatePdf = async(url, cuid, path) => {
 
 const browser = await puppeteer.launch();
 
@@ -16,7 +16,7 @@ await page.goto(url);
 
 await page.waitFor(1000*60*2);
 
-await page.pdf({path: `documents/${cuid}.pdf`, format: 'A4'});
+await page.pdf({path: `${path}/${cuid}.pdf`, format: 'A4'});
 
 await browser.close();
 

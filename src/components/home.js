@@ -24,6 +24,7 @@ class Home extends Component {
             data: {}
         }
         this.handleClick = this.handleClick.bind(this);
+        this.onDelete = this.onDelete.bind(this);
         this.hideSideBar = this.hideSideBar.bind(this);
     }
     onCellValueChanged(params) {
@@ -34,11 +35,20 @@ class Home extends Component {
         }
     }
     onCreate = async(data) => {
-        await fetch(`/api/reports/schedule`, { method: 'POST', body: JSON.stringify(data)
+        const method = data.scheduleId ? 'PUT' : 'POST'
+        await fetch(`/api/reports/schedule`, { method: method, body: JSON.stringify(data)
             ,headers: {'Content-Type':'application/json'} });
             this.hideSideBar();
             return;
     }
+
+    onDelete = async(id) => {
+        const scheduleId = id.replace('#', '')
+        await fetch(`/api/reports/schedule/${scheduleId}`, { method: 'DELETE'
+            ,headers: {'Content-Type':'application/json'} });
+            this.hideSideBar();
+    }
+
     //need to add react onclick listener
     cellRendererFunc(params) {
         const link = document.createElement('a');
@@ -53,7 +63,8 @@ class Home extends Component {
 
     handleClick = async (cuid) => {
         const response = await fetch(`/api/alias/${cuid}/schedule`, { method: 'GET', headers: {'Content-Type':'application/json'} });
-        const schedule = await response.json()
+        const res = await response.json()
+        const schedule = res.status == 200 ? res.schedule : {};
         // const schedule = {email: 'muraligs@visualbi'}
         this.setState({viewSidebarActive: true, currentCUID: cuid, data: schedule })
     }
@@ -105,7 +116,7 @@ class Home extends Component {
                         >
                     </AgGridReact>
                 </div>
-                <CreateSchedule isActive={viewSidebarActive} cuid={currentCUID} onCreate={this.onCreate} onDismiss={this.hideSideBar} data={data}/>
+                <CreateSchedule isActive={viewSidebarActive} cuid={currentCUID} onCreate={this.onCreate} onDelete={this.onDelete} onDismiss={this.hideSideBar} data={data}/>
             </div>
         )
     }

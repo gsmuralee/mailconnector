@@ -16,13 +16,12 @@ const mergeRecords = function(reports, records){
 
 exports.login = (request, response) => {
     const {username, password, authtype} = request.body
-    const body = {username, password, authtype:"secLDAP"}
+    const body = {username, password, authtype}
 
     return fetch("http://labs.visualbi.com:2439/v1/login",
     { method: 'POST', body: JSON.stringify(body), headers: {'Content-Type':'application/json'} })
     .then(res => res.json())
     .then(json => {
-        console.log(json)
         return response.send(json)
     });
 }
@@ -56,7 +55,7 @@ exports.createSchedule = async (request, response) => {
         const [schedule] = await db.query(`create Vertex MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executionTime= :executionTime, email= :userEmail`,
         {params:{ type: type, startDate: startDate, endDate: endDate, executionTime: executionTime, userEmail}})
         await db.create('EDGE', 'mailScheduleHasAlias').from(alias['@rid']).to(schedule['@rid']).one();
-        scheduleHelper.runSchedules.call(schedule);
+        scheduleHelper.runSchedules(schedule);
         return response.send(schedule)
     } catch(e){
         const error = new Error(e)
@@ -67,10 +66,10 @@ exports.createSchedule = async (request, response) => {
 exports.updateSchedule = async (request, response) => {
     try{
         const {type, startDate, endDate, executionTime, userEmail, scheduleId} = request.body;
-        const resp = await db.query(`update MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executeOn= :executeOn where @rid= ${scheduleId}`,
-        {params:{ type: type, startDate: startDate, endDate: endDate, executeOn: executeOn}});
-        const schedule = await db.query(`select * from MailSchedule where rid= ${scheduleId}`)
-        scheduleHelper.runSchedules.call(schedule);
+        const resp = await db.query(`update MailSchedule set email= :email, type= :type, startDate= :startDate, endDate= :endDate, executionTime= :executionTime where @rid= ${scheduleId}`,
+        {params:{ type: type, startDate: startDate, endDate: endDate, executionTime: executionTime, email: userEmail}});
+        const [schedule] = await db.query(`select * from MailSchedule where @rid= ${scheduleId}`)
+        scheduleHelper.runSchedules(schedule);
         return response.send(schedule)
     } catch(e){
         const error = new Error(e)
@@ -79,15 +78,20 @@ exports.updateSchedule = async (request, response) => {
 }
 
 exports.deleteSchedule = async (request, response) => {
-    const scheduleId = '#'+request.params.scheduleId;
+    const scheduleId = '#'+request.params.id;
     await db.query("delete edge mailScheduleHasAlias where out="+scheduleId);
     await db.query("delete Vertex MailSchedule where @rid="+scheduleId);
     return response.send({message: 'success'})
 };
 
 exports.getSchedule = async function(request, response){
-    const {cuid} = request.params;
-    const [schedule] = await db.query(`select expand(out('mailScheduleHasAlias')) from Alias where cuid= '${cuid}'`).all();
-    return response.send(schedule)
+    try{
+        const {cuid} = request.params;
+        const [schedule] = await db.query(`select expand(out('mailScheduleHasAlias')) from Alias where cuid= '${cuid}'`).all();
+        const status = schedule ? 200 : 404;
+        return response.send({status: status, schedule: schedule})
+    } catch(e){
+        console.log(e)
+    }
 }
 

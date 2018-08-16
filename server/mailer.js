@@ -9,7 +9,7 @@ const mailServer 	= email.server.connect({
    authentication: 'plain'
 });
 
-const sendMail = function(alias, cuid, email){
+const sendMail = function(alias, cuid, email, path){
     var message	= {
         text:	"FYI", 
         from:	"bot <muraligs@visualbi.com>", 
@@ -18,7 +18,7 @@ const sendMail = function(alias, cuid, email){
         attachment: 
         [
            {data:`${alias}`, alternative:true},
-           {path:`documents/${cuid}.pdf`, type:"application/pdf", name:`${cuid}.pdf`}
+           {path:`${path}/${cuid}.pdf`, type:"application/pdf", name:`${cuid}.pdf`}
         ]
      };
      

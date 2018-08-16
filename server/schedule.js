@@ -6,53 +6,80 @@ const db = require("./db").connect();
 const fetch = require('node-fetch');
 const {generatePdf} = require("./puppeteer");
 const {sendMail} = require("./mailer");
+const Promise = require('bluebird');
 
-let insertScheduleDetails =  async function(date, email, rid){
-    const [details] = await db.query('create vertex MailScheduleDetails set date=:date, email=:email',
-       {params:{date:date, email:email}})
-    await db.create('EDGE', 'hasMailScheduleDetails').from(rid).to(details['@rid']);
-    return details
-}
+
+let insertScheduleDetails =  function(date, email, rid){
+    console.log(date, email, rid)
+    return db.query('create vertex MailScheduleDetails set date=:date, email=:email',
+        {params:{date:date, email:email}})
+        .then(scheduleDetails => {
+           //db.query('CREATE EDGE hasScheduleDetails FROM '+ this.scheduleId + ' TO '+scheduleDetails[0]['@rid'].toString());
+        db.create('EDGE', 'hasMailScheduleDetails').from(rid).to(scheduleDetails[0]['@rid']).one();
+        return Promise.resolve(scheduleDetails[0])
+  }).catch(err => Promise.reject(err))
+} 
 
 const generateAndSendMail = async (rid, email) => {
-    const [aliasRec] = await db.query(`select expand(in('mailScheduleHasAlias')) from ${rid}`).all();
-    const {username, cuid, alias} = aliasRec;
-    const res = await fetch(`http://labs.visualbi.com:2439/luna/reports/embed/${cuid}/${username}`,
-            { method: 'GET',  headers: {'Content-Type':'application/json'} })
-    const {url} = await res.json();
-    const pdf = await generatePdf(url);
-    sendMail(alias, cuid, email)
-    return aliasRec;
-
+    return db.query(`select expand(in('mailScheduleHasAlias')) from ${rid}`).all().then(ms => {
+        const [aliasRec] = ms;
+        const {username, cuid, alias} = aliasRec;
+        return fetch(`http://labs.visualbi.com:2439/luna/reports/embed/${cuid}/${username}`,
+            { method: 'GET',  headers: {'Content-Type':'application/json'} }).then(res => {
+                return res.json()
+        }).then(url => {
+            const tempURL = 'http://labs.visualbi.com:8084/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AUTsgHGpANhKkQ__5grPNmU&sIDType=CUID&token=VM-BILS21.VISUALBI.COM%3A6400%40%7B3%262%3D426577%2CU3%262v%3DVM-BILS21.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6873%2CU3%26qe%3D100%2CU3%26vz%3Dt36D7fZSoaWaTFih2ZFbx6f1.gRmzB8TzPtep_h6jvd.D4icVgLUUN5PlO_ICKc9%2CUP%7D'
+            return generatePdf(tempURL, cuid, 'server/documents');
+        }).then(pdf => {
+            return sendMail(alias, cuid, email, 'server/documents');
+        })
+    }).catch(err => {
+        console.log(err)
+        return Promise.reject(err)
+    })
+    
 }
 
-exports.runOnce = function(inp){
+exports.runOnce = async function(inp){
     const startTime = new Date(inp.startDate+' '+inp.executionTime)
     var rule = new Schedule.RecurrenceRule()
     rule.date = startTime.getDate(); rule.month = startTime.getMonth()
     rule.year = startTime.getFullYear(); rule.hour = startTime.getHours()
     rule.minute = startTime.getMinutes()
-    if (Schedule.scheduledJobs[inp.rid]) {
-        return Schedule.scheduledJobs[inp.rid].reschedule({rule}, function () {    
-                const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-                insertScheduleDetails.call(date,inp.email,inp.rid)
-                return generateAndSendMail(inp['@rid']);;
+    const rid = inp['@rid'].toString()
+    if (Schedule.scheduledJobs[rid]) {
+        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+                return generateAndSendMail(sid);;
+            })
         });
     }
     else {
-        return Schedule.scheduleJob(inp.rid, {rule}, function () {         
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            return generateAndSendMail(inp['@rid']);;
+        return Schedule.scheduleJob(rid, {rule}, function () {       
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+               return generateAndSendMail(rid, inp.email);
+            })
         });
     }
     return true;
 }
 
 exports.runNow = (inp) => {
-    const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-    insertScheduleDetails.call(date,inp.email,inp.rid)
-    return generateAndSendMail(inp['@rid']);;
+    const rid = inp['@rid'].toString()
+    return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+        return Promise.map([rid], sid =>{
+            const date = new Date().toLocaleString();
+            return insertScheduleDetails(date,inp.email,sid)
+        }).then(sd => {
+            return generateAndSendMail(sid);;
+        })
+    });
 }
 
 exports.runDaily = (inp) => {
@@ -62,18 +89,25 @@ exports.runDaily = (inp) => {
     var rule = new Schedule.RecurrenceRule()
     rule.hour = startTime.getHours()
     rule.minute = startTime.getMinutes()
-    if (Schedule.scheduledJobs[inp.rid]) {
-        return Schedule.scheduledJobs[inp.rid].reschedule({start: startDate,end: endDate,rule: rule}, function () {
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            return generateAndSendMail(inp['@rid']);;
+    const rid = inp['@rid'].toString()
+    if (Schedule.scheduledJobs[rid]) {
+        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+                return generateAndSendMail(sid);;
+            })
         });
     }
     else {
-        return Schedule.scheduleJob(inp.rid,{start: startDate,end: endDate,rule: rule}, function () {
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            return generateAndSendMail(inp['@rid']);;
+        return Schedule.scheduleJob(rid, {rule}, function () {       
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+               return generateAndSendMail(rid, inp.email);
+            })
         });
     }
     return true
@@ -82,7 +116,8 @@ exports.runDaily = (inp) => {
 exports.runHourly = (inp) => {
     let excMin = parseInt(inp.executeInterval)%60;
     let excHour = parseInt(inp.executeInterval) - excMin;
-    return createCustomSchedule(inp.rid,inp.startDate,inp.endDate,excHour,excMin,inp.email,new Date())
+    const rid = inp['@rid'].toString()
+    return createCustomSchedule(rid,inp.startDate,inp.endDate,excHour,excMin,inp.email,new Date())
 }
 
 let createCustomSchedule = (rid,fireDate,endDate,fireHour,fireMinute,email,currentTime) => {
@@ -101,23 +136,28 @@ let createCustomSchedule = (rid,fireDate,endDate,fireHour,fireMinute,email,curre
 	var rule = new Schedule.RecurrenceRule()
     rule.hour = creationTime.getHours()
     rule.minute = creationTime.getMinutes()
-	if (Schedule.scheduledJobs[rid]) {
-        return Schedule.scheduledJobs[rid].reschedule({start: newfireDate,end: endDate,rule: rule}, function () {
-            console.log(currentTime)
-            var newCurrentTime = new Date(currentTime.setMinutes(currentTime.getMinutes()+fireHour*60+fireMinute));
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            createCustomSchedule(rid,newfireDate,endDate,fireHour,fireMinute,email,newCurrentTime);
-            return generateAndSendMail(rid);
+    if (Schedule.scheduledJobs[rid]) {
+        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                let newCurrentTime = new Date(currentTime.setMinutes(currentTime.getMinutes()+fireHour*60+fireMinute));
+                createCustomSchedule(rid,newfireDate,endDate,fireHour,fireMinute,email,newCurrentTime);
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+                return generateAndSendMail(sid);;
+            })
         });
     }
     else {
-        return Schedule.scheduleJob(rid,{start: newfireDate,end: endDate,rule: rule}, function () {
-            var newCurrentTime = new Date(currentTime.setMinutes(currentTime.getMinutes()+fireHour*60+fireMinute));
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            createCustomSchedule(rid,newfireDate,endDate,fireHour,fireMinute,email,newCurrentTime);
-            return generateAndSendMail(rid);
+        return Schedule.scheduleJob(rid, {rule}, function () {       
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                let newCurrentTime = new Date(currentTime.setMinutes(currentTime.getMinutes()+fireHour*60+fireMinute));
+                createCustomSchedule(rid,newfireDate,endDate,fireHour,fireMinute,email,newCurrentTime);
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+               return generateAndSendMail(rid, inp.email);
+            })
         });
     }
 }
@@ -130,18 +170,25 @@ exports.runWeekly = (inp) => {
     rule.hour = startTime.getHours()
     rule.minute = startTime.getMinutes()
     rule.dayOfWeek = inp.weekDays;
-    if (Schedule.scheduledJobs[inp.rid]) {
-        return Schedule.scheduledJobs[inp.rid].reschedule({start: startDate,end: endDate,rule: rule}, function () {
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            return generateAndSendMail(inp['@rid']);;
+    const rid = inp['@rid'].toString()
+    if (Schedule.scheduledJobs[rid]) {
+        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+                return generateAndSendMail(sid);;
+            })
         });
     }
     else {
-        return Schedule.scheduleJob(inp.rid,{start: startDate,end: endDate,rule: rule}, function () {
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            return generateAndSendMail(inp['@rid']);;
+        return Schedule.scheduleJob(rid, {rule}, function () {       
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+               return generateAndSendMail(rid, inp.email);
+            })
         });
     }
     return true;
@@ -155,49 +202,54 @@ exports.runMonthly = (inp) => {
     rule.hour = startTime.getHours();
     rule.minute = startTime.getMinutes()
     rule.month = inp.dates
-    if (Schedule.scheduledJobs[inp.rid]) {
-        return Schedule.scheduleJob[inp.rid].reschedule({start: startDate,end: endDate,rule: rule}, function () {
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            return generateAndSendMail(inp['@rid']);;
+    const rid = inp['@rid'].toString()
+    if (Schedule.scheduledJobs[rid]) {
+        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+                return generateAndSendMail(sid);;
+            })
         });
     }
     else {
-        return Schedule.scheduleJob(inp.rid,{start: startDate,end: endDate,rule: rule}, function () {
-            const date = moment().format('MMMM Do YYYY, h:mm:ss a'); 
-            insertScheduleDetails.call(date,inp.email,inp.rid)
-            return generateAndSendMail(inp['@rid']);;
+        return Schedule.scheduleJob(rid, {rule}, function () {       
+            return Promise.map([rid], sid =>{
+                const date = new Date().toLocaleString();
+                return insertScheduleDetails(date,inp.email,sid)
+            }).then(sd => {
+               return generateAndSendMail(rid, inp.email);
+            })
         });
     }
     return true;
 }
 
 exports.runSchedules = (obj) => {
-    const _this = this;
-    if (!_this.isDeleted) {
-        switch (_this.type) {
+    console.log(obj)
+        switch (obj.type) {
             case 'ScheduleNow':
-                return exports.runNow(_this);
+                return exports.runNow(obj);
                 break;
             case 'OneTime':
                 return exports.runOnce(obj);
                 break;
             case 'Hourly':
-                return exports.runHourly(_this);
+                return exports.runHourly(obj);
                 break;
             case 'Daily':
-                return exports.runDaily(_this);
+                return exports.runDaily(obj);
                 break;
             case 'Weekly':
-                return exports.runWeekly(_this);
+                return exports.runWeekly(obj);
                 break;
             case 'Monthly':
-                return exports.runMonthly(_this);
+                return exports.runMonthly(obj);
                 break;
             default:
                 break;
         }
-    }
 }
 
 exports.CreateSchedule = (rid) => {
@@ -213,6 +265,6 @@ exports.CreateSchedule = (rid) => {
     console.log(JSON.stringify(exports.schedulesObject));
 }
 
-exports.DeleteSchedule = (inp) => {
-    Schedule.scheduleJob[inp.rid].cancel()
+exports.DeleteSchedule = (rid) => {
+    Schedule.scheduleJob[rid].cancel()
 }

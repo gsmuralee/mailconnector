@@ -5,6 +5,7 @@
   "dependencies": {
     "ag-grid": "^18.1.2",
     "ag-grid-react": "^18.1.0",
+    "bluebird": "^3.5.1",
     "body-parser": "^1.18.3",
     "child_process": "^1.0.2",
     "cors": "^2.8.4",
@@ -32,7 +33,8 @@
     "start": "react-scripts start",
     "client": "yarn start",
     "server": "nodemon server.js",
-    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\""
+    "mailer": "node ./server/receiveMailer.js",
+    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\" \" yarn mailer\" "
   },
   "devDependencies": {
     "concurrently": "^3.6.1"

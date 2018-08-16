@@ -53,6 +53,15 @@ const ScheduleTrigger = createReactClass({
   }
 });
 
+function Delete(props){
+  const {data, onDelete} = props;
+  if(!isEmpty(data)){
+    const id = data['@rid']
+    return <input type="submit" onClick={(scheduleId) => onDelete(id)} className="btn btn-add user-view" value="Delete" /> 
+  }
+  return ''
+}
+
 const CreateSchedule =  createReactClass({
   propTypes: {
      onHide:   PropTypes.func,
@@ -83,6 +92,9 @@ const CreateSchedule =  createReactClass({
     scheduleData.cuid = this.props.cuid;
     scheduleData.userEmail = this.userEmail.value;
     scheduleData.type = this.state.scheduleType;
+    if(!isEmpty(this.props.data)){
+      scheduleData.scheduleId = this.props.data['@rid'];
+    }
     if(isEmpty(scheduleData.userEmail))
       this.setState({'error':'Email is Required'})
     else if(equals(scheduleData.type,'Schedule Type'))
@@ -157,10 +169,6 @@ const CreateSchedule =  createReactClass({
       this.setState({'error':''});
   },
 
-  getDerivedStateFromProps(n, p){
-    console.log(n, p)
-  },
-
   componentWillReceiveProps(nextProps) {
     const {type,data} = nextProps;
     console.log(this.props, data, nextProps);
@@ -170,8 +178,10 @@ const CreateSchedule =  createReactClass({
       this.setState({scheduleType:data.type,'loadingActive':false,'loadingText':'','customLoaderClass':''});
     }
   },
+
+
   render() {
-    const {data,type,onHide,onCreate,show,onDismiss,isActive} = this.props;
+    const {data,type,onHide,onCreate,onDelete,show,onDismiss,isActive} = this.props;
     let className;
     if(isActive) className='overlay-head'
     else className='overlay-hide'
@@ -208,8 +218,9 @@ const CreateSchedule =  createReactClass({
                   </div>
                 </div>
                 <span className="user-view-buttons float-right">
+                  <Delete data={data} onDelete={onDelete}/>&nbsp;&nbsp;&nbsp;
                   <input type="submit" onClick={onDismiss} className="btn btn-add user-view" value="Dismiss" /> &nbsp;&nbsp;&nbsp;
-                <input type="submit" onClick={this.handleSubmit} className="btn btn-add user-view" value="Save" />
+                  <input type="submit" onClick={this.handleSubmit} className="btn btn-add user-view" value="Save" />
                 </span>
               </div>
               <div className={this.state.showSubmitLoadingIndicator}>

@@ -15,11 +15,10 @@ class Navigation extends Component {
         return (
             <div className="animate">
                 <nav className="navbar header-top fixed-top navbar-expand-lg  navbar-dark bg-dark">
-                <a className="navbar-brand" href="#">LOGO</a>
                 <div className="collapse navbar-collapse" id="navbarText">
                     <ul className="navbar-nav ml-md-auto d-md-flex">
                         <li className="nav-item">
-                            <a className="nav-link" href="" onClick={this.handleLogout}>logout</a>
+                            <a className="navbar-brand" href="" onClick={this.handleLogout}>logout</a>
                         </li>
                     </ul>
                 </div>
