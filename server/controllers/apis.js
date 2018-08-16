@@ -38,8 +38,8 @@ exports.reports = async (request, response) => {
 
 exports.alias = async (request, response) => {
     try{
-        const {username, cUID, alias} = request.body
-        await db.query(`update Alias set username='${username}',cuid='${cUID}',alias='${alias}' upsert where cuid='${cUID}'`)
+        const {username, cUID, alias, email} = request.body
+        await db.query(`update Alias set username='${username}',cuid='${cUID}',alias='${alias}', email='${email}' upsert where cuid='${cUID}'`)
         const [record] = await db.query(`select @rid from Alias where cuid='${cUID}'`);
         if(!record) throw new Error('Error inserting record')
         return response.send(record);

@@ -56,12 +56,13 @@ class Home extends Component {
         link.innerText = 'schedule';
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            this.handleClick(params.data.cUID)
+            this.handleClick(params.data.cUID, params.data.alias)
         });
         return link;
     }
 
-    handleClick = async (cuid) => {
+    handleClick = async (cuid, alias) => {
+        if(!alias) return false;
         const response = await fetch(`/api/alias/${cuid}/schedule`, { method: 'GET', headers: {'Content-Type':'application/json'} });
         const res = await response.json()
         const schedule = res.status == 200 ? res.schedule : {};
@@ -71,7 +72,7 @@ class Home extends Component {
 
 
     updateDB = async (cUID, alias) => {
-        const res =  await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")})
+        const res =  await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username"), email: localStorage.getItem("_email")})
             ,headers: {'Content-Type':'application/json'} });
         const record = await res.json();
         return record

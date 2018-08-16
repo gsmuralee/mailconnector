@@ -13,7 +13,7 @@ const serverConf = {
     }
 }
 const config = {
-    "name":     "luna_local",
+    "name":     "luna_latest",
     "user":     "admin",
     "password": "admin"
   }
