@@ -1,4 +1,4 @@
-const email 	= require("../node_modules/emailjs/email");
+const email 	= require("./node_modules/emailjs/email");
 const mailServer 	= email.server.connect({
    user:	"dmsbot@visualbi.com", 
    password:"Visualbi@123", 
