@@ -32,13 +32,11 @@
   "scripts": {
     "start": "react-scripts start",
     "client": "yarn start",
-    "server": "nodemon server.js",
+    "server": "node server.js",
     "mailer": "node ./server/receiveMailer.js",
-    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\" \" yarn mailer\" ",
-	"build": "webpack"
+    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\" \" yarn mailer\" "
   },
   "devDependencies": {
     "concurrently": "^3.6.1"
-  },
-  "proxy": "http://localhost:5000/"
+  }
 }
