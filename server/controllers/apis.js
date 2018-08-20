@@ -1,7 +1,7 @@
 const fetch = require("node-fetch");
 const db = require("../db").connect();
 const scheduleHelper = require('../schedule')
-
+const {config} = require('../config.js')
 const getRecords = async function(username){
     return await db.query(`select cuid, alias from Alias where username = '${username}'`).all();
 }
@@ -17,11 +17,8 @@ const mergeRecords = function(reports, records){
 exports.login = (request, response) => {
     const {username, password, authtype} = request.body
     const body = {username, password, authtype}
-    const origin = request.get('origin');
-    response.header("Access-Control-Allow-Origin", "*");
-    response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
 
-    return fetch("http://labs.visualbi.com:2439/v1/login",
+    return fetch(`${config.WCS_URL}/v1/login`,
     { method: 'POST', body: JSON.stringify(body), headers: {'Content-Type':'application/json'} })
     .then(res => res.json())
     .then(json => {
@@ -31,7 +28,7 @@ exports.login = (request, response) => {
 
 exports.reports = async (request, response) => {
     const {username} = request.params
-    const res = await fetch(`http://labs.visualbi.com:2439/luna/reports/${username}&false`,
+    const res = await fetch(`${config.WCS_URL}/luna/reports/${username}&false`,
             { method: 'GET',  headers: {'Content-Type':'application/json'} })
     const objs = await res.json()
     const records = await getRecords(username);

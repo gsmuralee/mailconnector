@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import {DropdownButton,MenuItem} from 'react-bootstrap'
- 
+import { routes } from '../config.js';
+
 class Login extends Component {
     constructor(props){
         super(props);
@@ -15,9 +16,8 @@ class Login extends Component {
     }
 
     callApi = async (username, password, authtype) => {
-        const response = await fetch('http://localhost:9000/api/login', { method: 'POST', body: JSON.stringify({username, password, authtype}), headers: {'Content-Type':'application/json'} });
+        const response = await fetch(routes('LOGIN'), { method: 'POST', body: JSON.stringify({username, password, authtype}), headers: {'Content-Type':'application/json'} });
         const body = await response.json();
-        console.log(body.status)
         if (body.status !== 200) throw Error(body.message);
         
         return body;

@@ -8,14 +8,13 @@ const port = process.env.PORT || 9000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.options('*', cors());
-
+app.options('*', cors())
 //routes
-app.post('/api/login', api.login);
-app.get('/api/reports/:username', api.reports);
-app.post('/api/reports/alias', api.alias);
-app.post('/api/reports/schedule', api.createSchedule);
-app.put('/api/reports/schedule', api.updateSchedule);
-app.delete('/api/reports/schedule/:id', api.deleteSchedule);
-app.get('/api/alias/:cuid/schedule', api.getSchedule);
+app.post('/api/login', cors(), api.login);
+app.get('/api/reports/:username', cors(), api.reports);
+app.post('/api/reports/alias', cors(),api.alias);
+app.post('/api/reports/schedule', cors(),api.createSchedule);
+app.put('/api/reports/schedule', cors(),api.updateSchedule);
+app.delete('/api/reports/schedule/:id', cors(),api.deleteSchedule);
+app.get('/api/alias/schedule/:cuid', cors(),api.getSchedule);
 app.listen(port, () => console.log(`Listening on port ${port}`));

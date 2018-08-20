@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import Navigation from './navigation';
 import CreateSchedule from './schedule/CreateSchedule';
 import { AgGridReact } from 'ag-grid-react';
+import { routes } from '../config.js';
 import 'ag-grid/dist/styles/ag-grid.css';
 import 'ag-grid/dist/styles/ag-theme-balham.css';
 
@@ -36,7 +37,7 @@ class Home extends Component {
     }
     onCreate = async(data) => {
         const method = data.scheduleId ? 'PUT' : 'POST'
-        await fetch(`/api/reports/schedule`, { method: method, body: JSON.stringify(data)
+        await fetch(routes('SCHEDULE'), { method: method, body: JSON.stringify(data)
             ,headers: {'Content-Type':'application/json'} });
             this.hideSideBar();
             return;
@@ -44,7 +45,7 @@ class Home extends Component {
 
     onDelete = async(id) => {
         const scheduleId = id.replace('#', '')
-        await fetch(`/api/reports/schedule/${scheduleId}`, { method: 'DELETE'
+        await fetch(routes('SCHEDULE',scheduleId), { method: 'DELETE'
             ,headers: {'Content-Type':'application/json'} });
             this.hideSideBar();
     }
@@ -63,7 +64,7 @@ class Home extends Component {
 
     handleClick = async (cuid, alias) => {
         if(!alias) return false;
-        const response = await fetch(`/api/alias/${cuid}/schedule`, { method: 'GET', headers: {'Content-Type':'application/json'} });
+        const response = await fetch(routes('GET_SCHEDULE',cuid), { method: 'GET', headers: {'Content-Type':'application/json'} });
         const res = await response.json()
         const schedule = res.status == 200 ? res.schedule : {};
         // const schedule = {email: 'muraligs@visualbi'}
@@ -72,14 +73,14 @@ class Home extends Component {
 
 
     updateDB = async (cUID, alias) => {
-        const res =  await fetch(`/api/reports/alias`, { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username"), email: localStorage.getItem("_email")})
+        const res =  await fetch(routes('REPORTS'), { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username"), email: localStorage.getItem("_email")})
             ,headers: {'Content-Type':'application/json'} });
         const record = await res.json();
         return record
     }
 
     callApi = async (username) => {
-        const response = await fetch(`/api/reports/${username}`, { method: 'GET', headers: {'Content-Type':'application/json'} });
+        const response = await fetch(routes('GET_REPORTS',username), { method: 'GET', headers: {'Content-Type':'application/json'} });
         const reports = await response.json()
         let result  = reports.map(res => {
             let {title, cUID, foldername, alias} = res;
