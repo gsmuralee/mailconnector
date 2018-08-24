@@ -16,6 +16,7 @@ class Login extends Component {
     }
 
     callApi = async (username, password, authtype) => {
+        console.log(routes('LOGIN'))
         const response = await fetch(routes('LOGIN'), { method: 'POST', body: JSON.stringify({username, password, authtype}), headers: {'Content-Type':'application/json'} });
         const body = await response.json();
         if (body.status !== 200) throw Error(body.message);

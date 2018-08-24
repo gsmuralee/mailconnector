@@ -2,6 +2,7 @@ const fetch = require("node-fetch");
 const db = require("../db").connect();
 const scheduleHelper = require('../schedule')
 const {config} = require('../config.js')
+
 const getRecords = async function(username){
     return await db.query(`select cuid, alias from Alias where username = '${username}'`).all();
 }
@@ -17,17 +18,18 @@ const mergeRecords = function(reports, records){
 exports.login = (request, response) => {
     const {username, password, authtype} = request.body
     const body = {username, password, authtype}
-
+    console.log(`${config.WCS_URL}/luna/reports/${username}&false`)
     return fetch(`${config.WCS_URL}/v1/login`,
     { method: 'POST', body: JSON.stringify(body), headers: {'Content-Type':'application/json'} })
     .then(res => res.json())
     .then(json => {
-        return response.send(json)
+            return response.send(json)
     });
 }
 
 exports.reports = async (request, response) => {
-    const {username} = request.params
+    const {username} = request.params;
+    console.log(`${config.WCS_URL}/luna/reports/${username}&false`)
     const res = await fetch(`${config.WCS_URL}/luna/reports/${username}&false`,
             { method: 'GET',  headers: {'Content-Type':'application/json'} })
     const objs = await res.json()

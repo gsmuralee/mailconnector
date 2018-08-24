@@ -3,10 +3,11 @@ const db = require("./db").connect();
 const fetch = require('node-fetch');
 const {generatePdf} = require("./puppeteer");
 const {sendMail} = require("./mailer");
+const {config} = require('./config.js')
 
 const mailListener = new MailListener({
-    username:	"dmsbot@visualbi.com", 
-    password:"Visualbi@123", 
+    username:	"muraligs@visualbi.com", 
+    password:"Jul-2018", 
     host: 'outlook.office365.com',
     port: 993, // imap port
     tls: true,
@@ -53,11 +54,12 @@ const generateAndSendMail = async (val, semail) => {
   const {username, cuid, alias, email} = aliasRec;
   console.log(semail.toLowerCase(),  email.toLowerCase())
   if(semail.toLowerCase() != email.toLowerCase()) return false;
-  const res = await fetch(`http://labs.visualbi.com:2439/luna/reports/embed/${cuid}/${username}`,
+  const res = await fetch(`${config.WCS_URL}/luna/reports/embed/${cuid}/${username}`,
           { method: 'GET',  headers: {'Content-Type':'application/json'} })
-  const {url} = await res.json();
+  const {url, token} = await res.json();
+  const encodedURL = url + encodeURIComponent(token);
   //const tempURL = 'http://labs.visualbi.com:8084/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AUTsgHGpANhKkQ__5grPNmU&sIDType=CUID&token=VM-BILS21.VISUALBI.COM%3A6400%40%7B3%262%3D426577%2CU3%262v%3DVM-BILS21.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6873%2CU3%26qe%3D100%2CU3%26vz%3Dt36D7fZSoaWaTFih2ZFbx6f1.gRmzB8TzPtep_h6jvd.D4icVgLUUN5PlO_ICKc9%2CUP%7D'
-  const pdf = await generatePdf(url, cuid, 'documents');
+  const pdf = await generatePdf(encodedURL, cuid, 'documents');
   sendMail(alias, cuid, semail, 'documents')
   return aliasRec;
 }

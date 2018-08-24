@@ -1,7 +1,7 @@
 const email 	= require("./node_modules/emailjs/email");
 const mailServer 	= email.server.connect({
-   user:	"dmsbot@visualbi.com", 
-   password:"Visualbi@123", 
+   user:	"muraligs@visualbi.com", 
+   password:"Jul-2018", 
    host: "smtp.office365.com",
    port : 587,
    tls: {ciphers: "SSLv3"},
@@ -9,11 +9,11 @@ const mailServer 	= email.server.connect({
    authentication: 'plain'
 });
 
-const sendMail = function(alias, cuid, email, path){
+const sendMail = function(alias, cuid, semail, path){
     var message	= {
         text:	"FYI", 
-        from:	"dmsbot <dmsbot@visualbi.com>", 
-        to:		`hello <${email}>`,
+        from:	"dmsbot <muraligs@visualbi.com>", 
+        to:		`hello <${semail}>`,
         subject:	`report - ${alias}`,
         attachment: 
         [

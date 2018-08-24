@@ -4,14 +4,13 @@ import React from 'react'
 import {DropdownButton,MenuItem,Modal,Button} from 'react-bootstrap'
 import PropTypes from 'prop-types'
 import {equals, isEmpty} from '../../helpers/common'
-import moment from 'moment'
 import createReactClass  from 'create-react-class';
 import SingleTrigger from './SingleTrigger'
 import HourlyTrigger from './HourlyTrigger'
 import DailyTrigger from './DailyTrigger'
 import WeeklyTrigger from './WeeklyTrigger'
 import MonthlyTrigger from './MonthlyTrigger'
-
+import AddFilterForm from './addFilterForm'
 import CustomLoader from './CustomLoader'
 
 const ScheduleTrigger = createReactClass({
@@ -80,7 +79,8 @@ const CreateSchedule =  createReactClass({
       'showLoadingIndicator': 'display-none',
       'customLoaderClass': 'opacity-7',
       'loadingActive':true,
-      'loadingText':'Fetching User'
+      'loadingText':'Fetching User',
+      'Formfilter':{}
     };
   },
   handleSubmit(event) {
@@ -179,6 +179,9 @@ const CreateSchedule =  createReactClass({
     }
   },
 
+  onNewFilter(name, dsAlias, dimension, filterString){
+    this.setState({'Formfilters': {name, dsAlias, dimension, filterString}})
+  },
 
   render() {
     const {data,type,onHide,onCreate,onDelete,show,onDismiss,isActive} = this.props;
@@ -212,6 +215,11 @@ const CreateSchedule =  createReactClass({
                   </div>
                   <div className='col-sm-12 col-md-12 form-group input-group zero-margin padding-top-20'>
                     <ScheduleTrigger ref="scheduleTrigger" scheduleType={this.state.scheduleType} data={data} onSubmit={this.handleSubmit} />
+                  </div>
+                  <div className='col-sm-12 col-md-12 form-group input-group zero-margin padding-top-20'>
+                    <h4 className='heading-form-small'>Filter</h4>
+                    {this.state.}
+                    <AddFilterForm ref="addFilterForm" onNewFilter={this.onNewFilter} />
                   </div>
                   <div className='col-sm-12 col-md-12 form-group input-group zero-margin'>
                     <div className='errorTxt'>{this.state.error}</div>
