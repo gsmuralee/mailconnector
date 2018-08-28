@@ -52,10 +52,11 @@ exports.alias = async (request, response) => {
 
 exports.createSchedule = async (request, response) => {
     try{
-        const {type, startDate, endDate, executionTime, cuid, userEmail} = request.body;
+        const {type, startDate, endDate, executionTime, cuid, userEmail, formfilters, cfminValue, cfmaxValue, globalScript} = request.body;
         const [alias] =  await db.query(`select * from Alias where cuid = '${cuid}'`).all()
-        const [schedule] = await db.query(`create Vertex MailSchedule set type= :type, startDate= :startDate, endDate= :endDate, executionTime= :executionTime, email= :userEmail`,
-        {params:{ type: type, startDate: startDate, endDate: endDate, executionTime: executionTime, userEmail}})
+        const [schedule] = await db.query(`create Vertex MailSchedule set type= :type, startDate= :startDate, endDate= :endDate,
+         executionTime= :executionTime, email= :userEmail,formfilters=:formfilters, cfminValue=:cfminValue, cfmaxValue=:cfmaxValue, globalScript=:globalScript`,
+        {params:{ type, startDate, endDate, executionTime, userEmail, formfilters, cfminValue,cfmaxValue, globalScript}})
         await db.create('EDGE', 'mailScheduleHasAlias').from(alias['@rid']).to(schedule['@rid']).one();
         scheduleHelper.runSchedules(schedule);
         return response.send(schedule)
@@ -67,9 +68,10 @@ exports.createSchedule = async (request, response) => {
 
 exports.updateSchedule = async (request, response) => {
     try{
-        const {type, startDate, endDate, executionTime, userEmail, scheduleId} = request.body;
-        const resp = await db.query(`update MailSchedule set email= :email, type= :type, startDate= :startDate, endDate= :endDate, executionTime= :executionTime where @rid= ${scheduleId}`,
-        {params:{ type: type, startDate: startDate, endDate: endDate, executionTime: executionTime, email: userEmail}});
+        const {type, startDate, endDate, executionTime, userEmail, scheduleId, formfilters,  cfminValue, cfmaxValue, globalScript} = request.body;
+        const resp = await db.query(`update MailSchedule set email= :userEmail, type= :type, startDate= :startDate, endDate= :endDate,
+         executionTime= :executionTime,formfilters=:formfilters, cfminValue=:cfminValue, cfmaxValue=:cfmaxValue, globalScript=:globalScript where @rid= ${scheduleId}`,
+        {params:{ type, startDate, endDate, executionTime, userEmail, formfilters, cfminValue,cfmaxValue, globalScript}});
         const [schedule] = await db.query(`select * from MailSchedule where @rid= ${scheduleId}`)
         scheduleHelper.runSchedules(schedule);
         return response.send(schedule)

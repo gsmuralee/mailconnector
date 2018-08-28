@@ -11,6 +11,7 @@ import DailyTrigger from './DailyTrigger'
 import WeeklyTrigger from './WeeklyTrigger'
 import MonthlyTrigger from './MonthlyTrigger'
 import AddFilterForm from './addFilterForm'
+import Filter from './Filter'
 import CustomLoader from './CustomLoader'
 
 const ScheduleTrigger = createReactClass({
@@ -80,7 +81,13 @@ const CreateSchedule =  createReactClass({
       'customLoaderClass': 'opacity-7',
       'loadingActive':true,
       'loadingText':'Fetching User',
-      'Formfilter':{}
+      'formfilters': [],
+      'cfminValue':'',
+      'cfmaxValue':'',
+      'globalScript':'',
+      'addfilters': false,
+      'cfStatus': false,
+      'gsStatus': false
     };
   },
   handleSubmit(event) {
@@ -90,14 +97,15 @@ const CreateSchedule =  createReactClass({
     const now = new Date();
     now.setMinutes(now.getMinutes()+2);
     scheduleData.cuid = this.props.cuid;
-    scheduleData.userEmail = this.userEmail.value;
     scheduleData.type = this.state.scheduleType;
+    scheduleData.cfminValue = this.cfminValue.value;
+    scheduleData.cfmaxValue = this.cfmaxValue.value;
+    scheduleData.globalScript = this.globalScript.value
+    scheduleData.formfilters = this.state.formfilters
     if(!isEmpty(this.props.data)){
       scheduleData.scheduleId = this.props.data['@rid'];
     }
-    if(isEmpty(scheduleData.userEmail))
-      this.setState({'error':'Email is Required'})
-    else if(equals(scheduleData.type,'Schedule Type'))
+    if(equals(scheduleData.type,'Schedule Type'))
       this.setState({'error':'Schedule Type is Required'})
     else if (equals(scheduleData.type,'Hourly')&&isEmpty(this.refs.scheduleTrigger.refs.hourlyTrigger.state.hoursvalue))
       this.setState({'error':'Execution Hour is required'})
@@ -173,14 +181,28 @@ const CreateSchedule =  createReactClass({
     const {type,data} = nextProps;
     console.log(this.props, data, nextProps);
     if(!isEmpty(data)) {
-      this.setState({'loadingActive':true,'loadingText':'Fetching Schedule','customLoaderClass':'opacity-7','scheduleType':''});
-      this.userEmail.value = data.email;
-      this.setState({scheduleType:data.type,'loadingActive':false,'loadingText':'','customLoaderClass':''});
+      //this.setState({'loadingActive':true,'loadingText':'Fetching Schedule','customLoaderClass':'opacity-7','scheduleType':''});
+      this.cfminValue.value = data.cfminValue;
+      this.cfmaxValue.value = data.cfmaxValue;
+      this.globalScript.value = data.globalScript
+      this.setState({formfilters: data.formfilters, scheduleType:data.type,'loadingActive':false,'loadingText':'','customLoaderClass':''});
     }
   },
 
   onNewFilter(name, dsAlias, dimension, filterString){
-    this.setState({'Formfilters': {name, dsAlias, dimension, filterString}})
+    this.setState({'formfilters': [...this.state.formfilters, {name, dsAlias, dimension, filterString}]})
+  },
+
+  onCFCheck(e){
+    this.setState({'cfStatus': e.target.checked})
+  },
+
+  onGSCheck(e){
+    this.setState({'gsStatus': e.target.checked})
+  },
+
+  onFilterCheck(e){
+    this.setState({'addfilters': e.target.checked})
   },
 
   render() {
@@ -196,10 +218,6 @@ const CreateSchedule =  createReactClass({
               <div className='col-sm-12 col-md-12'>
                 <h4 className='heading-form font-weight-600'>{type}</h4>
                 <div className='col-sm-12 col-md-12'>
-                  <div className='col-sm-12 col-md-12 form-group input-group zero-margin'>
-                      <h4 className='heading-form-small'>Email</h4>
-                      <input className="form-control" type="text" ref={(input) => { this.userEmail = input; }} name='userEmail' placeholder="Email" />
-                    </div>
                     <div className='col-sm-12 col-md-12 form-group input-group zero-margin'>
                     <h4 className='heading-form-small'>Schedule Type</h4>
                     <div className="scheduletype-dropdown">
@@ -217,9 +235,47 @@ const CreateSchedule =  createReactClass({
                     <ScheduleTrigger ref="scheduleTrigger" scheduleType={this.state.scheduleType} data={data} onSubmit={this.handleSubmit} />
                   </div>
                   <div className='col-sm-12 col-md-12 form-group input-group zero-margin padding-top-20'>
-                    <h4 className='heading-form-small'>Filter</h4>
-                    {this.state.}
-                    <AddFilterForm ref="addFilterForm" onNewFilter={this.onNewFilter} />
+                    <span className="checkbox checkbox-success expire-checkbox-daily expiry-checkbox">
+                      Conditional Formating <input id="checkbox-cf" type="checkbox" defaultChecked={false} onChange={this.onCFCheck}  />
+                      <label htmlFor="checkbox-cf" className="top-align"></label>
+                    </span>
+                    <div className="col-sm-12 col-md-6 form-group input-group no-padding">    
+                        <div className="control-title"> Min Value </div> 
+                        <input  className="form-group input-group text-align-center" type="text" ref={(input) => { this.cfminValue = input; }} name='cfminValue' placeholder="min Value" />
+                     </div>
+                     <div className="col-sm-12 col-md-6 form-group input-group no-padding">
+                     <div className="control-title"> Max Value </div>
+                        <input className="form-group input-group text-align-center"  type="text" ref={(input) => { this.cfmaxValue = input; }} name='cfmaxValue' placeholder="max Value" />
+                    </div>
+                  </div>
+                  <div className='col-sm-12 col-md-12 form-group input-group zero-margin padding-top-20'>
+                  <span className="checkbox checkbox-success expire-checkbox-daily expiry-checkbox">
+                    Global Script <input id="checkbox-gs" type="checkbox" defaultChecked={false} onChange={this.onGSCheck}  />
+                    <label htmlFor="checkbox-gs" className="top-align"></label>
+                  </span>
+                      <input className="form-control" type="text" ref={(input) => { this.globalScript = input; }} name='globalScript' placeholder="Script" />
+                  </div>
+                  <div className='col-sm-12 col-md-12 form-group input-group zero-margin padding-top-20'>
+                  <span className="checkbox checkbox-success expire-checkbox-daily expiry-checkbox">
+                    Filter <input id="checkbox-filter" type="checkbox" defaultChecked={false} onChange={this.onFilterCheck}  />
+                    <label htmlFor="checkbox-filter" className="top-align"></label>
+                  </span>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Name</th>
+                          <th scope="col">DS Alias</th>
+                          <th scope="col">Dimension</th>
+                          <th scope="col">Filter String</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {this.state.formfilters.map((filter, i) => 
+                          <Filter key={i} {...filter}/>
+                        )}
+                      </tbody>
+                    </table>
+                    <AddFilterForm enabled={this.state.addfilters} onNewFilter={this.onNewFilter} />
                   </div>
                   <div className='col-sm-12 col-md-12 form-group input-group zero-margin'>
                     <div className='errorTxt'>{this.state.error}</div>

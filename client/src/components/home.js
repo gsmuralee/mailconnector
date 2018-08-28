@@ -37,7 +37,8 @@ class Home extends Component {
     }
     onCreate = async(data) => {
         const method = data.scheduleId ? 'PUT' : 'POST'
-        await fetch(routes('SCHEDULE'), { method: method, body: JSON.stringify(data)
+        const fdata = {...data, userEmail: localStorage.getItem('_email')}
+        await fetch(routes('SCHEDULE'), { method: method, body: JSON.stringify(fdata)
             ,headers: {'Content-Type':'application/json'} });
             this.hideSideBar();
             return;

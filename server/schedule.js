@@ -6,7 +6,7 @@ const fetch = require('node-fetch');
 const {generatePdf} = require("./puppeteer");
 const {sendMail} = require("./mailer");
 const Promise = require('bluebird');
-
+const {config} = require('./config.js')
 
 let insertScheduleDetails =  function(date, email, rid){
     console.log(date, email, rid)
@@ -19,18 +19,23 @@ let insertScheduleDetails =  function(date, email, rid){
   }).catch(err => Promise.reject(err))
 } 
 
-const generateAndSendMail = async (rid, email) => {
+const generateAndSendMail = async (rid, schedule) => {
+    const {email,globalScript,cfmaxValue,cfminValue,formfilters} = schedule
+    const cfValue = {'minValue':cfminValue,'maxValue':cfmaxValue}
     return db.query(`select expand(in('mailScheduleHasAlias')) from ${rid}`).all().then(ms => {
         const [aliasRec] = ms;
         const {username, cuid, alias} = aliasRec;
-        return fetch(`http://labs.visualbi.com:2439/luna/reports/embed/${cuid}/${username}`,
+        return fetch(`${config.WCS_URL}/luna/reports/embed/${cuid}/${username}`,
             { method: 'GET',  headers: {'Content-Type':'application/json'} }).then(res => {
                 return res.json()
-        }).then(url => {
+        }).then(json => {
             //const tempURL = 'http://labs.visualbi.com:8084/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AUTsgHGpANhKkQ__5grPNmU&sIDType=CUID&token=VM-BILS21.VISUALBI.COM%3A6400%40%7B3%262%3D426577%2CU3%262v%3DVM-BILS21.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6873%2CU3%26qe%3D100%2CU3%26vz%3Dt36D7fZSoaWaTFih2ZFbx6f1.gRmzB8TzPtep_h6jvd.D4icVgLUUN5PlO_ICKc9%2CUP%7D'
-            return generatePdf(url, cuid, 'server/documents');
+            const {url, token} = json;
+            const encodedURL = `${url}${encodeURIComponent(token)}&globalScript='${globalScript}'&dsFilter=${JSON.stringify(formfilters)}&cfValue=${JSON.stringify(cfValue)}`;
+            console.log(encodedURL)
+            return generatePdf(encodedURL, cuid, 'documents');
         }).then(pdf => {
-            return sendMail(alias, cuid, email, 'server/documents');
+            return sendMail(alias, cuid, email, 'documents');
         })
     }).catch(err => {
         console.log(err)
@@ -52,7 +57,7 @@ exports.runOnce = async function(inp){
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-                return generateAndSendMail(sid);;
+                return generateAndSendMail(rid,inp);
             })
         });
     }
@@ -62,7 +67,7 @@ exports.runOnce = async function(inp){
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-               return generateAndSendMail(rid, inp.email);
+               return generateAndSendMail(rid, inp);
             })
         });
     }
@@ -76,7 +81,7 @@ exports.runNow = (inp) => {
             const date = new Date().toLocaleString();
             return insertScheduleDetails(date,inp.email,sid)
         }).then(sd => {
-            return generateAndSendMail(sid);;
+            return generateAndSendMail(rid, inp);
         })
     });
 }
@@ -90,22 +95,22 @@ exports.runDaily = (inp) => {
     rule.minute = startTime.getMinutes()
     const rid = inp['@rid'].toString()
     if (Schedule.scheduledJobs[rid]) {
-        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+        return Schedule.scheduledJobs[rid].reschedule({start: startDate,end: endDate,rule: rule}, function () {
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-                return generateAndSendMail(sid);;
+                return generateAndSendMail(rid, inp);
             })
         });
     }
     else {
-        return Schedule.scheduleJob(rid, {rule}, function () {       
+        return Schedule.scheduleJob(rid, {start: startDate,end: endDate,rule: rule}, function () {       
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-               return generateAndSendMail(rid, inp.email);
+               return generateAndSendMail(rid, inp);
             })
         });
     }
@@ -136,26 +141,26 @@ let createCustomSchedule = (rid,fireDate,endDate,fireHour,fireMinute,email,curre
     rule.hour = creationTime.getHours()
     rule.minute = creationTime.getMinutes()
     if (Schedule.scheduledJobs[rid]) {
-        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+        return Schedule.scheduledJobs[rid].reschedule({start: newfireDate,end: endDate,rule: rule}, function () {    
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 let newCurrentTime = new Date(currentTime.setMinutes(currentTime.getMinutes()+fireHour*60+fireMinute));
                 createCustomSchedule(rid,newfireDate,endDate,fireHour,fireMinute,email,newCurrentTime);
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-                return generateAndSendMail(sid);;
+                return generateAndSendMail(rid, inp);
             })
         });
     }
     else {
-        return Schedule.scheduleJob(rid, {rule}, function () {       
+        return Schedule.scheduleJob(rid, {start: newfireDate,end: endDate,rule: rule}, function () {       
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 let newCurrentTime = new Date(currentTime.setMinutes(currentTime.getMinutes()+fireHour*60+fireMinute));
                 createCustomSchedule(rid,newfireDate,endDate,fireHour,fireMinute,email,newCurrentTime);
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-               return generateAndSendMail(rid, inp.email);
+               return generateAndSendMail(rid, inp);
             })
         });
     }
@@ -163,30 +168,28 @@ let createCustomSchedule = (rid,fireDate,endDate,fireHour,fireMinute,email,curre
 
 exports.runWeekly = (inp) => {
     const startTime = new Date(inp.startDate+' '+inp.executionTime)
-    const startDate = new Date(inp.startDate)
-    const endDate = new Date(inp.endDate)
     var rule = new Schedule.RecurrenceRule()
     rule.hour = startTime.getHours()
     rule.minute = startTime.getMinutes()
     rule.dayOfWeek = inp.weekDays;
     const rid = inp['@rid'].toString()
     if (Schedule.scheduledJobs[rid]) {
-        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+        return Schedule.scheduledJobs[rid].reschedule({start: startDate,end: endDate,rule: rule}, function () {    
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-                return generateAndSendMail(sid);;
+                return generateAndSendMail(rid, inp);
             })
         });
     }
     else {
-        return Schedule.scheduleJob(rid, {rule}, function () {       
+        return Schedule.scheduleJob(rid, {start: startDate,end: endDate,rule: rule}, function () {       
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-               return generateAndSendMail(rid, inp.email);
+               return generateAndSendMail(rid, inp);
             })
         });
     }
@@ -203,22 +206,22 @@ exports.runMonthly = (inp) => {
     rule.month = inp.dates
     const rid = inp['@rid'].toString()
     if (Schedule.scheduledJobs[rid]) {
-        return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
+        return Schedule.scheduledJobs[rid].reschedule({start: startDate,end: endDate,rule: rule}, function () {    
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-                return generateAndSendMail(sid);;
+                return generateAndSendMail(rid, inp);
             })
         });
     }
     else {
-        return Schedule.scheduleJob(rid, {rule}, function () {       
+        return Schedule.scheduleJob(rid, {start: startDate,end: endDate,rule: rule}, function () {       
             return Promise.map([rid], sid =>{
                 const date = new Date().toLocaleString();
                 return insertScheduleDetails(date,inp.email,sid)
             }).then(sd => {
-               return generateAndSendMail(rid, inp.email);
+               return generateAndSendMail(rid, inp);
             })
         });
     }
