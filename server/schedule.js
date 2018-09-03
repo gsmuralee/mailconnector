@@ -8,8 +8,16 @@ const {sendMail} = require("./mailer");
 const Promise = require('bluebird');
 const {config} = require('./config.js')
 
+const encode  = (i) => encodeURIComponent(i)
+const formURL = (gs, cf, filter) =>{
+    let url = '';
+    url += gs ? `&globalScript=${encode(encode(JSON.stringify(gs)))}` : '';
+    url += cf ? `&cfValue=${encode(encode(JSON.stringify(cf)))}` : '';
+    url += cf ? `&dsFilter=${encode(encode(JSON.stringify(filter)))}` : '';
+    return url;
+}
+
 let insertScheduleDetails =  function(date, email, rid){
-    console.log(date, email, rid)
     return db.query('create vertex MailScheduleDetails set date=:date, email=:email',
         {params:{date:date, email:email}})
         .then(scheduleDetails => {
@@ -22,20 +30,24 @@ let insertScheduleDetails =  function(date, email, rid){
 const generateAndSendMail = async (rid, schedule) => {
     const {email,globalScript,cfmaxValue,cfminValue,formfilters} = schedule
     const cfValue = {'minValue':cfminValue,'maxValue':cfmaxValue}
-    return db.query(`select expand(in('mailScheduleHasAlias')) from ${rid}`).all().then(ms => {
+    return db.query(`select cuid, username, alias, last(out('mailAliasHasServer'))['sslConnection'] as ssl , last(out('mailAliasHasServer'))['agentAddress'] as host, last(out('mailAliasHasServer'))['agentPort'] as port from (select expand(in('mailScheduleHasAlias')) from ${rid})`).all().then(ms => {
         const [aliasRec] = ms;
-        const {username, cuid, alias} = aliasRec;
-        return fetch(`${config.WCS_URL}/luna/reports/embed/${cuid}/${username}`,
+        const {username, cuid, alias, host, port, ssl} = aliasRec;
+        const protocol = ssl ? 'https' : 'http';
+        const WCS_URL = `${protocol}://${host}:${port}`
+        return fetch(`${WCS_URL}/luna/reports/embed/${cuid}/${username}`,
             { method: 'GET',  headers: {'Content-Type':'application/json'} }).then(res => {
                 return res.json()
         }).then(json => {
             //const tempURL = 'http://labs.visualbi.com:8084/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AS_8lXsg6pZOobA4YEdcZkw&sIDType=CUID&token=VM-BILS21.VISUALBI.COM%3A6400%40%7B3%262%3D426577%2CU3%262v%3DVM-BILS21.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6873%2CU3%26qe%3D100%2CU3%26vz%3Dt36D7fZSoaWaTFih2ZFbx6f1.gRmzB8TzPtep_h6jvd.D4icVgLUUN5PlO_ICKc9%2CUP%7D'
             const {url, token} = json;
-            const encodedURL = `${url}${encodeURIComponent(token)}&globalScript='${globalScript}'&dsFilter=${JSON.stringify(formfilters)}&cfValue=${JSON.stringify(cfValue)}`;
-            console.log(encodedURL)
+            const encodedURL = `${url}${encodeURIComponent(token)}${formURL(globalScript,cfValue,formfilters)}`
             return generatePdf(encodedURL, cuid, 'documents');
         }).then(pdf => {
-            return sendMail(alias, cuid, email, 'documents');
+            if(pdf == 'TRUE')
+                return sendMail(alias, cuid, email, 'documents');
+            else
+                return
         })
     }).catch(err => {
         console.log(err)
@@ -75,14 +87,12 @@ exports.runOnce = async function(inp){
 
 exports.runNow = (inp) => {
     const rid = inp['@rid'].toString()
-    return Schedule.scheduledJobs[rid].reschedule({rule}, function () {    
-        return Promise.map([rid], sid =>{
-            const date = new Date().toLocaleString();
-            return insertScheduleDetails(date,inp.email,sid)
-        }).then(sd => {
-            return generateAndSendMail(rid, inp);
-        })
-    });
+    return Promise.map([rid], sid =>{
+        const date = new Date().toLocaleString();
+        return insertScheduleDetails(date,inp.email,sid)
+    }).then(sd => {
+        return generateAndSendMail(rid, inp);
+    })
 }
 
 exports.runDaily = (inp) => {

@@ -13,7 +13,6 @@ import MonthlyTrigger from './MonthlyTrigger'
 import AddFilterForm from './addFilterForm'
 import Filter from './Filter'
 import CustomLoader from './CustomLoader'
-import DeleteModal from './DeleteModal'
 import {v4} from 'uuid';
 
 const ScheduleTrigger = createReactClass({

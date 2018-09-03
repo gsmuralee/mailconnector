@@ -53,13 +53,14 @@ exports.reports = async (request, response) => {
 
 exports.alias = async (request, response) => {
     try{
-        const {username, cUID, alias, email, severAlias} = request.body;
+        const {username, cUID, alias, email, serverAlias} = request.body;
+        console.log(username, cUID, alias, serverAlias)
         await db.query(`update Alias set username='${username}',cuid='${cUID}',alias='${alias}', email='${email}' upsert where cuid='${cUID}'`)
-        const [record] = await db.query(`select @rid,out('mailAliasHasServer') as rid from Alias where cuid='${cUID}'`);
+        const [record] = await db.query(`select @rid,out('mailAliasHasServer') from Alias where cuid='${cUID}'`);
         if(!record) throw new Error('Error inserting record')
-        if(!record.rid){
-            const server = await db.query(`select @rid from serverAlias where serverAlias='${severAlias}'`);
-            await db.create('EDGE', 'mailAliasHasServer').from(record['@rid']).to(server['@rid']).one();
+        if(!record.out.length){
+            const [server] = await db.query(`select @rid from Server where serverAlias='${serverAlias}'`).all();
+            await db.create('EDGE', 'mailAliasHasServer').from(record['rid']).to(server['rid']).one();
         }
         return response.send(record);
     } catch(e){

@@ -74,7 +74,8 @@ class Home extends Component {
 
 
     updateDB = async (cUID, alias) => {
-        const res =  await fetch(routes('REPORTS'), { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username"), email: localStorage.getItem("_email")})
+        const res =  await fetch(routes('REPORTS'), { method: 'POST', body: JSON.stringify({cUID, alias, username: localStorage.getItem("_username")
+        , email: localStorage.getItem("_email"), serverAlias: localStorage.getItem("_serverAlias")})
             ,headers: {'Content-Type':'application/json'} });
         const record = await res.json();
         return record
