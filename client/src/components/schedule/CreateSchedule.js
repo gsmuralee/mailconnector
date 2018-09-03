@@ -13,6 +13,8 @@ import MonthlyTrigger from './MonthlyTrigger'
 import AddFilterForm from './addFilterForm'
 import Filter from './Filter'
 import CustomLoader from './CustomLoader'
+import DeleteModal from './DeleteModal'
+import {v4} from 'uuid';
 
 const ScheduleTrigger = createReactClass({
   propTypes :{
@@ -87,7 +89,9 @@ const CreateSchedule =  createReactClass({
       'globalScript':'',
       'addfilters': false,
       'cfStatus': false,
-      'gsStatus': false
+      'gsStatus': false,
+      'deletePopUp': false,
+      'currentFilter':{}
     };
   },
   handleSubmit(event) {
@@ -182,15 +186,17 @@ const CreateSchedule =  createReactClass({
     console.log(this.props, data, nextProps);
     if(!isEmpty(data)) {
       //this.setState({'loadingActive':true,'loadingText':'Fetching Schedule','customLoaderClass':'opacity-7','scheduleType':''});
-      this.cfminValue.value = data.cfminValue;
-      this.cfmaxValue.value = data.cfmaxValue;
-      this.globalScript.value = data.globalScript
-      this.setState({formfilters: data.formfilters, scheduleType:data.type,'loadingActive':false,'loadingText':'','customLoaderClass':''});
+      this.cfminValue.value = data.cfminValue ? data.cfminValue : '';
+      this.cfmaxValue.value = data.cfmaxValue ? data.cfmaxValue : '';
+      this.globalScript.value = data.globalScript ? data.globalScript : '';
+      this.setState({formfilters: data.formfilters ? data.formfilters : [], scheduleType:data.type,'loadingActive':false,'loadingText':'','customLoaderClass':''});
     }
   },
 
-  onNewFilter(name, dsAlias, dimension, filterString){
-    this.setState({'formfilters': [...this.state.formfilters, {name, dsAlias, dimension, filterString}]})
+  onNewFilter(name, dsAlias, dimension, filterString, id){
+    const formfilters = this.state.formfilters.filter(f => f.id !== id )
+    const cid = id ? id : v4()
+    this.setState({'formfilters': [...formfilters, {name, dsAlias, dimension, filterString, id:cid}], 'currentFilter': {}})
   },
 
   onCFCheck(e){
@@ -203,6 +209,16 @@ const CreateSchedule =  createReactClass({
 
   onFilterCheck(e){
     this.setState({'addfilters': e.target.checked})
+  },
+
+  removeFilter(id){
+    const formfilters = this.state.formfilters.filter(f => f.id !== id )
+    this.setState({formfilters});
+  },
+
+  editFilter(id){
+    const [filter] = this.state.formfilters.filter(f => f.id == id )
+    this.setState({'currentFilter': filter})
   },
 
   render() {
@@ -239,13 +255,13 @@ const CreateSchedule =  createReactClass({
                       Conditional Formating <input id="checkbox-cf" type="checkbox" defaultChecked={false} onChange={this.onCFCheck}  />
                       <label htmlFor="checkbox-cf" className="top-align"></label>
                     </span>
-                    <div className="col-sm-12 col-md-6 form-group input-group no-padding">    
+                    <div className={`col-sm-12 col-md-6 form-group input-group no-padding ${this.state.cfStatus ? '':'hidden'}`}>    
                         <div className="control-title"> Min Value </div> 
-                        <input  className="form-group input-group text-align-center" type="text" ref={(input) => { this.cfminValue = input; }} name='cfminValue' placeholder="min Value" />
-                     </div>
-                     <div className="col-sm-12 col-md-6 form-group input-group no-padding">
-                     <div className="control-title"> Max Value </div>
-                        <input className="form-group input-group text-align-center"  type="text" ref={(input) => { this.cfmaxValue = input; }} name='cfmaxValue' placeholder="max Value" />
+                        <input  className="form-group input-group text-align-center" type='input' ref={(input) => { this.cfminValue = input; }} name='cfminValue' placeholder="min Value" />
+                    </div>
+                    <div className={`col-sm-12 col-md-6 form-group input-group no-padding ${this.state.cfStatus ? '':'hidden'}`}>
+                    <div className="control-title"> Max Value </div>
+                        <input className="form-group input-group text-align-center"  type='input' ref={(input) => { this.cfmaxValue = input; }} name='cfmaxValue' placeholder="max Value" />
                     </div>
                   </div>
                   <div className='col-sm-12 col-md-12 form-group input-group zero-margin padding-top-20'>
@@ -253,7 +269,9 @@ const CreateSchedule =  createReactClass({
                     Global Script <input id="checkbox-gs" type="checkbox" defaultChecked={false} onChange={this.onGSCheck}  />
                     <label htmlFor="checkbox-gs" className="top-align"></label>
                   </span>
-                      <input className="form-control" type="text" ref={(input) => { this.globalScript = input; }} name='globalScript' placeholder="Script" />
+                    <div className={this.state.gsStatus ? '':'hidden'}>
+                      <input className="form-control" type='input' ref={(input) => { this.globalScript = input; }} name='globalScript' placeholder="Script" />
+                    </div>
                   </div>
                   <div className='col-sm-12 col-md-12 form-group input-group zero-margin padding-top-20'>
                   <span className="checkbox checkbox-success expire-checkbox-daily expiry-checkbox">
@@ -267,15 +285,16 @@ const CreateSchedule =  createReactClass({
                           <th scope="col">DS Alias</th>
                           <th scope="col">Dimension</th>
                           <th scope="col">Filter String</th>
+                          <th scope="col">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {this.state.formfilters.map((filter, i) => 
-                          <Filter key={i} {...filter}/>
+                          <Filter key={i} onEdit={() => this.editFilter(filter.id)} onDelete={() => this.removeFilter(filter.id)} {...filter}/>
                         )}
                       </tbody>
                     </table>
-                    <AddFilterForm enabled={this.state.addfilters} onNewFilter={this.onNewFilter} />
+                    <AddFilterForm enabled={this.state.addfilters} onNewFilter={this.onNewFilter} filter={this.state.currentFilter} />
                   </div>
                   <div className='col-sm-12 col-md-12 form-group input-group zero-margin'>
                     <div className='errorTxt'>{this.state.error}</div>

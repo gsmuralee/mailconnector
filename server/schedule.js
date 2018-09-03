@@ -29,7 +29,7 @@ const generateAndSendMail = async (rid, schedule) => {
             { method: 'GET',  headers: {'Content-Type':'application/json'} }).then(res => {
                 return res.json()
         }).then(json => {
-            //const tempURL = 'http://labs.visualbi.com:8084/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AUTsgHGpANhKkQ__5grPNmU&sIDType=CUID&token=VM-BILS21.VISUALBI.COM%3A6400%40%7B3%262%3D426577%2CU3%262v%3DVM-BILS21.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6873%2CU3%26qe%3D100%2CU3%26vz%3Dt36D7fZSoaWaTFih2ZFbx6f1.gRmzB8TzPtep_h6jvd.D4icVgLUUN5PlO_ICKc9%2CUP%7D'
+            //const tempURL = 'http://labs.visualbi.com:8084/BOE/OpenDocument/opendoc/openDocument.jsp?iDocID=AS_8lXsg6pZOobA4YEdcZkw&sIDType=CUID&token=VM-BILS21.VISUALBI.COM%3A6400%40%7B3%262%3D426577%2CU3%262v%3DVM-BILS21.VISUALBI.COM%3A6400%2CUP%2666%3D40%2CU3%2668%3DsecLDAP%3Acn%253Dmurali+gali+srinivasan%252C+ou%253Demployees%252C+ou%253Dvbi_chn%252C+ou%253Dvbi_in%252C+ou%253Dvbi_apac%252C+ou%253Dvbi_users%252C+ou%253Dvbi%252C+dc%253Dvisualbi%252C+dc%253Dcom%2CUP%26S9%3D6873%2CU3%26qe%3D100%2CU3%26vz%3Dt36D7fZSoaWaTFih2ZFbx6f1.gRmzB8TzPtep_h6jvd.D4icVgLUUN5PlO_ICKc9%2CUP%7D'
             const {url, token} = json;
             const encodedURL = `${url}${encodeURIComponent(token)}&globalScript='${globalScript}'&dsFilter=${JSON.stringify(formfilters)}&cfValue=${JSON.stringify(cfValue)}`;
             console.log(encodedURL)
@@ -41,7 +41,6 @@ const generateAndSendMail = async (rid, schedule) => {
         console.log(err)
         return Promise.reject(err)
     })
-    
 }
 
 exports.runOnce = async function(inp){

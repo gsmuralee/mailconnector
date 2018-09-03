@@ -9,37 +9,58 @@ class Login extends Component {
             token: '',
             usernameerr: '',
             passworderr: '',
-            authenticationMethod: 'Select Type'
+            servererr: '',
+            authenticationMethod: 'Select Type',
+            serverMethod: 'Select Server',
+            servers: []
         }
         this.submit = this.submit.bind(this);
         this.handleDropDown = this.handleDropDown.bind(this);
+        this.handleServerDropDown = this.handleServerDropDown.bind(this);
     }
 
-    callApi = async (username, password, authtype) => {
-        console.log(routes('LOGIN'))
-        const response = await fetch(routes('LOGIN'), { method: 'POST', body: JSON.stringify({username, password, authtype}), headers: {'Content-Type':'application/json'} });
+    callApi = async (username, password, serverAlias) => {
+        console.log(serverAlias)
+        const response = await fetch(routes('LOGIN'), { method: 'POST', body: JSON.stringify({username, password, serverAlias}), headers: {'Content-Type':'application/json'} });
         const body = await response.json();
         if (body.status !== 200) throw Error(body.message);
-        
         return body;
     };
+    getServer = async () => {
+        const response = await fetch(routes('SERVERS'), { method: 'GET', headers: {'Content-Type':'application/json'} });
+        const body = await response.json();
+        if (body.status !== 200) throw Error(body.message);
+        return body.servers;
+    }
+    componentWillMount () {
+        this.getServer().then(servers => {
+            this.setState({'servers':servers});
+        }).catch(err => {
+            this.setState({'servererr':'Add server in DMS portal'});
+        });
+    }
 
     handleDropDown(eventKey) {
         this.setState({'authenticationMethod':eventKey});
     };
 
+    handleServerDropDown(eventKey) {
+        this.setState({'serverMethod':eventKey});
+    };
+
     submit(e){
         const {username, password, email} = this.refs;
         e.preventDefault();
-        this.callApi(username.value, password.value, this.state.authenticationMethod)
+        this.callApi(username.value, password.value, this.state.serverMethod)
         .then(res => {
             localStorage.setItem('_token', res.token);
             localStorage.setItem('_username', username.value);
             localStorage.setItem('_email', email.value);
+            localStorage.setItem('_serverAlias', this.state.serverMethod);
             this.props.history.push("/");
         })
         .catch(err => {
-            this.setState({'passworderr':'Invalid username, password, Auth type'});
+            this.setState({'passworderr':'Invalid username, password'});
         });
     }
 
@@ -61,14 +82,14 @@ class Login extends Component {
                         <div className="form-group input-group" style={{"width":"100%"}}>
                             <input className="form-control" type="text" ref='email' name='email' placeholder="Mailing Email Address" required/><br/>
                         </div>
-                         <div className='col-sm-12 col-md-12 form-group input-group zero-margin'>
-                            <h4 className='heading-form-small'>Authentication Type</h4>
-                            <DropdownButton bsStyle='default' title={this.state.authenticationMethod} id='authenticationMethodCreate' onSelect={this.handleDropDown}>
-                                <MenuItem eventKey='secWinAD'>Windows AD</MenuItem>
-                                <MenuItem eventKey='secLDAP'>LDAP</MenuItem>
-                                <MenuItem eventKey='secEnterprise'>Enterprise</MenuItem>
+                        <div className='col-sm-12 col-md-12 form-group input-group zero-margin'>
+                            <h4 className='heading-form-small'>Servers</h4>
+                            <DropdownButton bsStyle='default' title={this.state.serverMethod} id='serverlist' onSelect={this.handleServerDropDown}>
+                                {this.state.servers.map((server, i) => 
+                                    <MenuItem key={i} eventKey={server.serverAlias}>{server.serverAlias}</MenuItem>
+                                )}
                             </DropdownButton><br/><br/>
-                            <div className="errorTxt">{this.state.passworderr}</div>
+                            <div className="errorTxt">{this.state.servererr}</div>
                         </div>      
                       <div className="form-group">
                         <button type="submit" className="btn btn-def btn-block">Login</button>

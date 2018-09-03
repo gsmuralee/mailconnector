@@ -17,4 +17,5 @@ app.post('/api/reports/schedule', cors(),api.createSchedule);
 app.put('/api/reports/schedule', cors(),api.updateSchedule);
 app.delete('/api/reports/schedule/:id', cors(),api.deleteSchedule);
 app.get('/api/alias/schedule/:cuid', cors(),api.getSchedule);
+app.get('/api/servers', cors(),api.getServers);
 app.listen(port, () => console.log(`Listening on port ${port}`));

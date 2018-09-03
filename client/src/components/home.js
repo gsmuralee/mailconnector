@@ -81,7 +81,8 @@ class Home extends Component {
     }
 
     callApi = async (username) => {
-        const response = await fetch(routes('GET_REPORTS',username), { method: 'GET', headers: {'Content-Type':'application/json'} });
+        const param = `${username}?serveralias=${localStorage.getItem('_serverAlias')}`
+        const response = await fetch(routes('GET_REPORTS',param), { method: 'GET', headers: {'Content-Type':'application/json'} });
         const reports = await response.json()
         let result  = reports.map(res => {
             let {title, cUID, foldername, alias} = res;

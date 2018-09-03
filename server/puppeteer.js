@@ -10,7 +10,7 @@ const browser = await puppeteer.launch();
 
 const page = await browser.newPage();
 await page.setViewport({width: 1200, height: 800, deviceScaleFactor: 2});
-await page.goto(url);
+await page.goto(url, {waitUntil: 'networkidle0'});
 
 //wait 2 minutes, before genearting pdf
 

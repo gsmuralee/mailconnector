@@ -4,8 +4,8 @@ const constant = {
     SCHEDULE: `/api/reports/schedule/`,
     GET_SCHEDULE: `/api/alias/schedule/`,
     REPORTS: '/api/reports/alias',
-    GET_REPORTS: '/api/reports/'
-
+    GET_REPORTS: '/api/reports/',
+    SERVERS: '/api/servers/'
 };
 
 export const routes = (route, param='') => BASE_URL+constant[route]+param;

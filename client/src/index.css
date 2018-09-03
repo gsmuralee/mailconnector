@@ -1784,3 +1784,7 @@ div#folderview {
 .grid-pos {
   padding: 75px 10px;
 }
+
+td span + span {
+  padding-left: 1em;
+}

@@ -3,6 +3,11 @@ const db = require("../db").connect();
 const scheduleHelper = require('../schedule')
 const {config} = require('../config.js')
 
+const formUrl = (server) => {
+    const protocol = server.sslConnection ? 'https' : 'http';
+    return `${protocol}://${server.agentAddress}:${server.agentPort}`
+}
+
 const getRecords = async function(username){
     return await db.query(`select cuid, alias from Alias where username = '${username}'`).all();
 }
@@ -14,36 +19,48 @@ const mergeRecords = function(reports, records){
     })
 }
 
-
-exports.login = (request, response) => {
-    const {username, password, authtype} = request.body
-    const body = {username, password, authtype}
-    console.log(`${config.WCS_URL}/luna/reports/${username}&false`)
-    return fetch(`${config.WCS_URL}/v1/login`,
-    { method: 'POST', body: JSON.stringify(body), headers: {'Content-Type':'application/json'} })
-    .then(res => res.json())
-    .then(json => {
-            return response.send(json)
-    });
+exports.login = async (request, response) => {
+    try{
+        const {username, password, serverAlias} = request.body;
+        const [server] = await db.query(`select * from server where serverAlias='${serverAlias}'`).all();
+        if(!server) throw new Error('No server found');
+        const body = {username, password, authtype: server.authType};
+        console.log(`${formUrl(server)}/v1/login`)
+        const res =  await fetch(`${formUrl(server)}/v1/login`,
+        { method: 'POST', body: JSON.stringify(body), headers: {'Content-Type':'application/json'} })
+        const json =  await res.json()
+        return response.send(json)
+    } catch(e){
+        return response.send(e);
+    }   
 }
 
 exports.reports = async (request, response) => {
-    const {username} = request.params;
-    console.log(`${config.WCS_URL}/luna/reports/${username}&false`)
-    const res = await fetch(`${config.WCS_URL}/luna/reports/${username}&false`,
-            { method: 'GET',  headers: {'Content-Type':'application/json'} })
-    const objs = await res.json()
-    const records = await getRecords(username);
-    return response.send(mergeRecords(objs, records))
-    //return response.send(objs)
+    try{
+        const {username} = request.params;
+        const {serveralias} = request.query;
+        const [server] = await db.query(`select * from server where serverAlias='${serveralias}'`).all();
+        if(!server) throw new Error('No server found');
+        const res = await fetch(`${formUrl(server)}/luna/reports/${username}&false`,
+                { method: 'GET',  headers: {'Content-Type':'application/json'} })
+        const objs = await res.json()
+        const records = await getRecords(username);
+        return response.send(mergeRecords(objs, records))
+    } catch(e){
+        return response.send(e)
+    }
 }
 
 exports.alias = async (request, response) => {
     try{
-        const {username, cUID, alias, email} = request.body
+        const {username, cUID, alias, email, severAlias} = request.body;
         await db.query(`update Alias set username='${username}',cuid='${cUID}',alias='${alias}', email='${email}' upsert where cuid='${cUID}'`)
-        const [record] = await db.query(`select @rid from Alias where cuid='${cUID}'`);
+        const [record] = await db.query(`select @rid,out('mailAliasHasServer') as rid from Alias where cuid='${cUID}'`);
         if(!record) throw new Error('Error inserting record')
+        if(!record.rid){
+            const server = await db.query(`select @rid from serverAlias where serverAlias='${severAlias}'`);
+            await db.create('EDGE', 'mailAliasHasServer').from(record['@rid']).to(server['@rid']).one();
+        }
         return response.send(record);
     } catch(e){
         return response.send(e);
@@ -99,3 +116,12 @@ exports.getSchedule = async function(request, response){
     }
 }
 
+exports.getServers = async function(request, response){
+    try{
+        const servers = await db.query(`select * from server`).all();
+        const status = servers.length ? 200 : 404;
+        return response.send({status: status, servers: servers})
+    } catch(e){
+        console.log(e)
+    }
+}
